@@ -36,10 +36,18 @@ export function LineChart({ values, color = "var(--accent)", height = 180, fill 
   );
 }
 
-export function Donut({ value = 93 }: { value?: number }) {
+export function Donut({
+  value = 93,
+  centerValue = 200,
+  centerLabel = "kcal left",
+}: {
+  value?: number;
+  centerValue?: number | string;
+  centerLabel?: string;
+}) {
   return (
-    <div className="donut" style={{ "--value": `${value * 3.6}deg` } as React.CSSProperties}>
-      <div><strong>200</strong><span>kcal left</span></div>
+    <div className="donut" style={{ "--value": `${Math.min(Math.max(value, 0), 100) * 3.6}deg` } as React.CSSProperties}>
+      <div><strong>{centerValue}</strong><span>{centerLabel}</span></div>
     </div>
   );
 }
