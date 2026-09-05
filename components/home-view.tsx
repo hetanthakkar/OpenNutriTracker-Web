@@ -2,6 +2,7 @@
 
 import { Activity, ArrowDown, Droplets, Flame, Footprints, Plus, Scale } from "lucide-react";
 import { activity, meals } from "@/lib/mock-data";
+import { getDemoAdaptivePlan } from "@/lib/expenditure-demo";
 import { Donut } from "./charts";
 import { Card, ProgressBar, SectionTitle } from "./ui";
 import { AllTargets, NutritionScores } from "./nutrition-home";
@@ -17,7 +18,7 @@ export const defaultHomeVisibility: HomeVisibility = {
 
 export const homeCustomizeOptions: Array<{ id: HomeSection; title: string; detail: string }> = [
   { id: "quickStats", title: "Quick stats", detail: "Weight and water" },
-  { id: "energy", title: "Calorie budget", detail: "Energy and macro rings" },
+  { id: "energy", title: "Calorie budget", detail: "Adaptive expenditure and macro targets" },
   { id: "scores", title: "Nutrition scores", detail: "Daily nutrition quality" },
   { id: "meals", title: "Today's meals", detail: "Logged meals and times" },
   { id: "activity", title: "Activity", detail: "Exercise and calorie burn" },
@@ -46,6 +47,16 @@ export function HomeView({
   const waterGoal = 1900;
   const waterPercent = Math.round((waterMl / waterGoal) * 100);
   const displayedActivities = [...activity, ...extraActivities];
+
+  const suppliedKcal = 2655;
+  const adaptivePlan = getDemoAdaptivePlan(false);
+  const calorieGoal = adaptivePlan.caloriePlan.targetKcal;
+  const expenditureKcal = adaptivePlan.caloriePlan.expenditureKcal;
+  const calorieRemaining = calorieGoal - suppliedKcal;
+  const caloriePercent = Math.round((suppliedKcal / calorieGoal) * 100);
+  const carbsTarget = Math.round((calorieGoal * 0.60) / 4);
+  const fatTarget = Math.round((calorieGoal * 0.25) / 9);
+  const proteinTarget = Math.round((calorieGoal * 0.15) / 4);
 
   const quickStatsStyle: React.CSSProperties = {
     display: "grid",
@@ -94,17 +105,17 @@ export function HomeView({
         {visible.energy && <Card className="energy-card">
           <div className="energy-heading">
             <div><span className="eyebrow">Daily energy</span><h2>Your calorie budget</h2></div>
-            <span className="on-track"><span />On track</span>
+            <span className={`on-track ${calorieRemaining < 0 ? "over-target" : ""}`}><span />{calorieRemaining >= 0 ? "On track" : `${Math.abs(calorieRemaining)} kcal over`}</span>
           </div>
           <div className="energy-body">
-            <div className="energy-stat supplied"><span className="round-icon teal"><ArrowDown size={20} /></span><strong>2,655</strong><small>supplied</small></div>
-            <Donut value={93} />
-            <div className="energy-stat burned"><span className="round-icon amber"><Flame size={20} /></span><strong>249</strong><small>burned</small></div>
+            <div className="energy-stat supplied"><span className="round-icon teal"><ArrowDown size={20} /></span><strong>{suppliedKcal.toLocaleString()}</strong><small>supplied</small></div>
+            <Donut value={caloriePercent} centerValue={Math.abs(calorieRemaining).toLocaleString()} centerLabel={calorieRemaining >= 0 ? "kcal left" : "kcal over"} />
+            <div className="energy-stat burned"><span className="round-icon amber"><Flame size={20} /></span><strong>{expenditureKcal.toLocaleString()}</strong><small>expenditure</small></div>
           </div>
           <div className="macro-grid">
-            <div><span><i className="dot carbs" />carbs</span><strong>374<small>/428 g</small></strong><ProgressBar value={87} color="var(--carbs)" /></div>
-            <div><span><i className="dot fat" />fat</span><strong>89<small>/77 g</small></strong><ProgressBar value={100} color="var(--fat)" /></div>
-            <div><span><i className="dot protein" />protein</span><strong>92<small>/107 g</small></strong><ProgressBar value={86} color="var(--protein)" /></div>
+            <div><span><i className="dot carbs" />carbs</span><strong>374<small>/{carbsTarget} g</small></strong><ProgressBar value={(374 / carbsTarget) * 100} color="var(--carbs)" /></div>
+            <div><span><i className="dot fat" />fat</span><strong>89<small>/{fatTarget} g</small></strong><ProgressBar value={(89 / fatTarget) * 100} color="var(--fat)" /></div>
+            <div><span><i className="dot protein" />protein</span><strong>92<small>/{proteinTarget} g</small></strong><ProgressBar value={(92 / proteinTarget) * 100} color="var(--protein)" /></div>
           </div>
         </Card>}
 
