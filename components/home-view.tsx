@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Activity, ArrowDown, ChevronRight, Droplets, Flame, Footprints, Plus, Scale } from "lucide-react";
+import { Activity, ArrowDown, Droplets, Flame, Footprints, Plus, Scale } from "lucide-react";
 import { activity, meals } from "@/lib/mock-data";
 import { Donut } from "./charts";
 import { Card, ProgressBar, SectionTitle } from "./ui";
@@ -35,13 +35,18 @@ export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeV
     width: "100%",
   };
 
-  const quickStatButtonStyle: React.CSSProperties = {
+  const quickStatItemStyle: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    gridTemplateColumns: "auto minmax(0, 1fr)",
     alignItems: "center",
     columnGap: 12,
     width: "100%",
     minWidth: 0,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    borderRadius: 18,
+    background: "var(--surface)",
+    color: "var(--accent)",
     textAlign: "left",
   };
 
@@ -57,16 +62,14 @@ export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeV
       <div className="home-layout">
       <div className="home-main">
         {visible.quickStats && <div className="quick-stats" style={quickStatsStyle}>
-          <button style={quickStatButtonStyle}>
+          <div style={quickStatItemStyle}>
             <Scale size={17} />
             <span style={quickStatCopyStyle}><strong>87 kg</strong><small>Latest weight</small></span>
-            <ChevronRight size={16} />
-          </button>
-          <button style={quickStatButtonStyle}>
+          </div>
+          <div style={quickStatItemStyle}>
             <Droplets size={17} />
             <span style={quickStatCopyStyle}><strong>1,200 ml</strong><small>of 1,900 ml</small></span>
-            <Plus size={16} />
-          </button>
+          </div>
         </div>}
 
         {visible.energy && <Card className="energy-card">
