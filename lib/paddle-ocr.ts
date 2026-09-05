@@ -1,6 +1,8 @@
 import type { OcrItem, OcrPoint } from "./nutrition-parser";
 
 const PADDLE_OCR_ESM = "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm";
+const PADDLE_WORKER_ESM =
+  "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/dist/assets/worker-entry-C9UNuyOJ.js";
 const ORT_WASM_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
 
 // PaddleOCR's default model host can be extremely slow outside China.
@@ -43,10 +45,28 @@ export interface BrowserOcrResult {
 }
 
 let ocrPromise: Promise<PaddleInstance> | null = null;
+let workerBootstrapUrl: string | null = null;
 
 function importFromUrl(url: string): Promise<PaddleModule> {
   const importer = new Function("url", "return import(url)") as (moduleUrl: string) => Promise<PaddleModule>;
   return importer(url);
+}
+
+function createPaddleWorker(): Worker {
+  // A Worker cannot be constructed directly from a cross-origin CDN URL.
+  // Build a same-origin blob worker, then import PaddleOCR's worker module
+  // from jsDelivr inside it. jsDelivr serves the module with CORS enabled.
+  if (!workerBootstrapUrl) {
+    const source = `import ${JSON.stringify(PADDLE_WORKER_ESM)};`;
+    workerBootstrapUrl = URL.createObjectURL(
+      new Blob([source], { type: "text/javascript" }),
+    );
+  }
+
+  return new Worker(workerBootstrapUrl, {
+    type: "module",
+    name: "paddleocr-worker",
+  });
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -90,9 +110,11 @@ async function getOcr(): Promise<PaddleInstance> {
           textRecognitionModelName: "PP-OCRv6_tiny_rec",
           textRecognitionModelAsset: { url: REC_MODEL_URL },
 
-          // Critical for a PWA: model initialization, OpenCV, ONNX Runtime,
-          // detection and recognition must not run on the UI thread.
-          worker: true,
+          // Keep OpenCV + ONNX inference off the UI thread. The custom
+          // factory avoids the browser's cross-origin Worker restriction.
+          worker: {
+            createWorker: createPaddleWorker,
+          },
 
           ortOptions: {
             backend: "wasm",
