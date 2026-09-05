@@ -1,7 +1,7 @@
 export const meals = [
-  { id: 1, time: "8:10 AM", name: "Greek yoghurt bowl", detail: "Blueberries, almonds & honey", kcal: 438 },
-  { id: 2, time: "1:05 PM", name: "Salmon rice bowl", detail: "Brown rice, broccoli & olive oil", kcal: 684 },
-  { id: 3, time: "4:30 PM", name: "Apple & almond butter", detail: "1 serving", kcal: 226 },
+  { id: 1, time: "8:10 AM", name: "Greek yoghurt bowl", detail: "Blueberries, almonds & honey", kcal: 438, image: "/images/bowl.jpg" },
+  { id: 2, time: "1:05 PM", name: "Salmon rice bowl", detail: "Brown rice, broccoli & olive oil", kcal: 684, image: "/images/salmon.jpg" },
+  { id: 3, time: "4:30 PM", name: "Apple & almond butter", detail: "1 serving", kcal: 226, image: "/images/apple.jpg" },
 ];
 
 export const activity = [
