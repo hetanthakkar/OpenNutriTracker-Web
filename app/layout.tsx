@@ -6,6 +6,7 @@ import "./interaction-fixes.css";
 import "./pwa.css";
 import "./apple-health.css";
 import "./expenditure.css";
+import "./adaptive-budget.css";
 
 export const metadata: Metadata = {
   title: "OpenNutriTracker",
