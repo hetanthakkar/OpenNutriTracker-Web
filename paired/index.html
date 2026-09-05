@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Together" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <title>Together — for couples</title>
+  <script>
+    // Apply the saved theme before first paint so a cold PWA launch doesn't
+    // flash the default. Keep the key in sync with src/theme.ts.
+    (function () {
+      try {
+        var t = localStorage.getItem("paired_theme") || "forest";
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+  <script>
+    // iOS standalone-PWA launch bug: WebKit reports the viewport height short
+    // until the first scroll gesture, so bottom-anchored UI (fixed inset-0,
+    // 100dvh) floats above the home indicator on open. The installed app is
+    // always fullscreen, so pin the shell to the real screen height instead;
+    // the app shell reads --app-height with a 100dvh fallback for browsers.
+    (function () {
+      if (!navigator.standalone) return;
+      var set = function () {
+        var portrait = matchMedia("(orientation: portrait)").matches;
+        var screenH = portrait
+          ? Math.max(screen.width, screen.height)
+          : Math.min(screen.width, screen.height);
+        var h = Math.max(window.innerHeight, screenH);
+        document.documentElement.style.setProperty("--app-height", h + "px");
+      };
+      set();
+      window.addEventListener("resize", set);
+      window.addEventListener("orientationchange", set);
+    })();
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Semantic tokens carved out of Tailwind's palette so themes can flip them.
+   Everything else themes by overriding the built-in --color-rose/pink/stone
+   scales under a [data-theme] root (see the theme blocks below). */
+@theme {
+  --color-surface: #ffffff;   /* cards, nav, inputs, sheets (bg-surface)         */
+  --color-onaccent: #ffffff;  /* text/knobs on a colored accent (text-onaccent)  */
+}
+
+/* The body is the last-resort backstop behind everything, and it shows through
+   in the iOS home-indicator strip when the shell doesn't quite reach the bottom
+   on a cold PWA launch. The bottom nav is what sits directly above that gap, so
+   match its background (surface) — a gap then reads as more tab bar rather than
+   a band of the page color under it. */
+html,
+body {
+  min-height: 100dvh;
+  background-color: var(--color-surface);
+}
+body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   Themes. Each overrides the accent (rose) + soft/background (pink) scales.
+   The default (Rosé) uses Tailwind's built-in values, so it needs no block.
+   Midnight additionally flips surfaces and the neutral (stone) scale.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme="ocean"] {
+  --color-rose-50: #eff6ff;  --color-rose-100: #dbeafe; --color-rose-200: #bfdbfe;
+  --color-rose-300: #93c5fd; --color-rose-400: #60a5fa; --color-rose-500: #3b82f6;
+  --color-rose-600: #2563eb;
+  --color-pink-50: #eff6ff;  --color-pink-500: #0ea5e9;
+}
+
+:root[data-theme="lavender"] {
+  --color-rose-50: #f5f3ff;  --color-rose-100: #ede9fe; --color-rose-200: #ddd6fe;
+  --color-rose-300: #c4b5fd; --color-rose-400: #a78bfa; --color-rose-500: #8b5cf6;
+  --color-rose-600: #7c3aed;
+  --color-pink-50: #f5f3ff;  --color-pink-500: #a855f7;
+}
+
+:root[data-theme="sunset"] {
+  --color-rose-50: #fff7ed;  --color-rose-100: #ffedd5; --color-rose-200: #fed7aa;
+  --color-rose-300: #fdba74; --color-rose-400: #fb923c; --color-rose-500: #f97316;
+  --color-rose-600: #ea580c;
+  --color-pink-50: #fff7ed;  --color-pink-500: #fb7185;
+}
+
+:root[data-theme="forest"] {
+  --color-rose-50: #f0fdf4;  --color-rose-100: #dcfce7; --color-rose-200: #bbf7d0;
+  --color-rose-300: #86efac; --color-rose-400: #4ade80; --color-rose-500: #22c55e;
+  --color-rose-600: #16a34a;
+  --color-pink-50: #f0fdf4;  --color-pink-500: #14b8a6;
+}
+
+:root[data-theme="midnight"] {
+  --color-surface: #1e1b26;
+  --color-onaccent: #ffffff;
+
+  /* Neutrals flip: dark surfaces, light text. */
+  --color-stone-50:  #26232e; --color-stone-100: #2b2833; --color-stone-200: #38343f;
+  --color-stone-300: #55505d; --color-stone-400: #8b8693; --color-stone-500: #a7a2b0;
+  --color-stone-600: #c9c5d1; --color-stone-700: #e4e1e9; --color-stone-800: #f4f2f7;
+
+  /* Page background (bg-pink-50) + gradient end. */
+  --color-pink-50: #141118; --color-pink-500: #f472b6;
+
+  /* Accent tuned for dark. */
+  --color-rose-50: #2c1f28;  --color-rose-100: #3a2632; --color-rose-200: #4d3040;
+  --color-rose-300: #a85e73; --color-rose-400: #d16d88; --color-rose-500: #ec6a8a;
+  --color-rose-600: #f585a0;
+
+  /* Secondary-accent surfaces/text kept legible on dark. */
+  --color-indigo-50: #22203a; --color-indigo-100: #2a2846;
+  --color-indigo-500: #8f96ff; --color-indigo-600: #a9adff; --color-indigo-700: #c0c3ff;
+  --color-emerald-50: #14241d; --color-emerald-100: #1b3229; --color-emerald-600: #4ade9d;
+  --color-amber-50: #241f0e;  --color-amber-100: #2a2410; --color-amber-600: #fbbf24; --color-amber-700: #fcd34d;
+
+  /* Home bento tiles use a colour per collection; keep the rest legible too. */
+  --color-violet-50: #221c3a; --color-violet-100: #2b2247; --color-violet-600: #b09cff;
+  --color-sky-50:    #12222e; --color-sky-100:    #162c3c; --color-sky-600:    #56b8e8;
+  --color-fuchsia-50: #2a1830; --color-fuchsia-100: #351e3c; --color-fuchsia-600: #e879f9;
+}
+
+/* Tip/article bodies (@tailwindcss/typography). The shipped colour modifiers
+   (prose-stone &c.) bake literal oklch values, so they ignore the [data-theme]
+   overrides above and go unreadable on Midnight's dark surfaces. Point the
+   prose variables at the stone scale instead and every theme follows for free. */
+.prose {
+  --tw-prose-body: var(--color-stone-700);
+  --tw-prose-headings: var(--color-stone-800);
+  --tw-prose-lead: var(--color-stone-600);
+  --tw-prose-links: var(--color-rose-600);
+  --tw-prose-bold: var(--color-stone-800);
+  --tw-prose-counters: var(--color-stone-500);
+  --tw-prose-bullets: var(--color-stone-300);
+  --tw-prose-hr: var(--color-stone-200);
+  --tw-prose-quotes: var(--color-stone-800);
+  --tw-prose-quote-borders: var(--color-rose-200);
+  --tw-prose-captions: var(--color-stone-500);
+  --tw-prose-code: var(--color-stone-800);
+  --tw-prose-pre-code: var(--color-stone-100);
+  --tw-prose-pre-bg: var(--color-stone-800);
+  --tw-prose-th-borders: var(--color-stone-300);
+  --tw-prose-td-borders: var(--color-stone-200);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Visible-but-quiet scrollbar for the app's scrolling screens. On iOS/Android
+   these are overlay scrollbars that only appear mid-scroll — an affordance that
+   there's more below, not a permanent grey rail. */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rose-200) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-rose-200);
+  border-radius: 9999px;
+}
+
+/* Sticky notes: a paper-lift shadow. The small per-note rotation is applied in
+   the component so the board reads as hand-pinned rather than a table. */
+.sticky-note {
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.04), 0 6px 14px -6px rgb(0 0 0 / 0.18);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s;
+}
+.sticky-note:active {
+  transform: scale(0.985);
+}
+
+/* Gentle entrance for revealed answers / confirmations. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise-in {
+  animation: rise-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Overlay entrance / exit — iOS leaves backdrop-blur ghost pixels on abrupt
+   unmount, so the overlay fades in/out to give the compositor time to clean up. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.animate-overlay-in {
+  animation: overlay-in 0.2s ease-out both;
+}
+.animate-overlay-out {
+  animation: overlay-out 0.18s ease-in both;
+}
+
+/* Sheet slide-down exit (paired with rise-in entrance). */
+@keyframes slide-down {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(40px); }
+}
+.animate-slide-down {
+  animation: slide-down 0.18s ease-in both;
+}
+
+/* Fade-up entrance used by the home tab hero and grid tiles. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered delays for bento grid children. */
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 120ms; }
+.delay-3 { animation-delay: 180ms; }
+.delay-4 { animation-delay: 240ms; }
+.delay-5 { animation-delay: 300ms; }
+
