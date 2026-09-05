@@ -23,7 +23,7 @@ male:   RMR = 10W + 6.25H - 5A + 5
 female: RMR = 10W + 6.25H - 5A - 161
 ```
 
-Reference:
+References:
 
 - Mifflin MD, St Jeor ST, Hill LA, Scott BJ, Daugherty SA, Koh YO. *A new predictive equation for resting energy expenditure in healthy individuals.* Am J Clin Nutr. 1990;51(2):241-247. PMID 2305711. https://pubmed.ncbi.nlm.nih.gov/2305711/
 - Frankenfield D, Roth-Yousey L, Compher C. *Comparison of predictive equations for resting metabolic rate in healthy nonobese and obese adults.* J Am Diet Assoc. 2005;105(5):775-789. PMID 15883556. https://pubmed.ncbi.nlm.nih.gov/15883556/
@@ -87,7 +87,11 @@ Steps and workout records are optional. They are not converted into calories and
 
 A substantial change in steps can increase the estimator's update rate by at most 35%. Long-term TDEE still has to be supported by intake + trend-weight energy balance.
 
-This avoids depending on wearable energy-expenditure estimates while still letting objective activity information help identify a likely regime change earlier.
+This choice is supported by contemporary Apple Watch validation evidence: step-count accuracy is materially more useful than wearable energy-expenditure estimates, for which errors are inconsistent and frequently large.
+
+Reference:
+
+- *The accuracy of Apple Watch measurements: a living systematic review and meta-analysis.* npj Digital Medicine. 2026. https://www.nature.com/articles/s41746-025-02238-1
 
 ## Confidence
 
@@ -137,4 +141,8 @@ The equations are research-based, but our **combined estimator and its filter pa
 - behavior during rapid step-count changes
 - calibration of the displayed confidence score
 
-Where possible, external validation against doubly labeled water datasets would be preferable because doubly labeled water is the reference method for free-living total energy expenditure.
+Where possible, external validation against doubly labelled water datasets is preferable because DLW is the reference method for free-living total energy expenditure.
+
+Reference:
+
+- Westerterp KR. *Doubly labelled water assessment of energy expenditure: principle, practice, and promise.* Eur J Appl Physiol. 2017;117:1277-1285. PMID 28508113. https://pmc.ncbi.nlm.nih.gov/articles/PMC5486561/
