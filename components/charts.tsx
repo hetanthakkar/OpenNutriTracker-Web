@@ -13,24 +13,25 @@ export function LineChart({ values, color = "var(--accent)", height = 180, fill 
   const min = Math.min(...values);
   const max = Math.max(...values);
   const spread = max - min || 1;
+  const denominator = Math.max(1, values.length - 1);
   const points = values.map((value, index) => ({
-    x: paddingX + (index * (width - paddingX * 2)) / (values.length - 1),
+    x: paddingX + (index * (width - paddingX * 2)) / denominator,
     y: paddingY + ((max - value) * (height - paddingY * 2 - 18)) / spread,
   }));
   const line = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `${points[0].x},${height - 22} ${line} ${points.at(-1)?.x},${height - 22}`;
+  const area = points.length > 0 ? `${points[0].x},${height - 22} ${line} ${points.at(-1)?.x},${height - 22}` : "";
 
   return (
     <div className="chart-wrap">
-      <svg className="line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Seven day trend chart">
+      <svg className="line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Trend chart">
         {[0.25, 0.5, 0.75].map((fraction) => (
           <line key={fraction} x1="0" x2={width} y1={height * fraction} y2={height * fraction} className="chart-grid" />
         ))}
-        {fill && <polygon points={area} fill={color} opacity="0.09" />}
-        <polyline points={line} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        {fill && area && <polygon points={area} fill={color} opacity="0.09" />}
+        {line && <polyline points={line} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />}
         {points.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="5" fill={color} />)}
       </svg>
-      {labels && <div className="chart-labels">{labels.map((label) => <span key={label}>{label}</span>)}</div>}
+      {labels && <div className="chart-labels">{labels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>}
     </div>
   );
 }
