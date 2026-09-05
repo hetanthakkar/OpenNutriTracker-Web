@@ -16,6 +16,7 @@ import {
 } from "@/lib/apple-health";
 
 const STORAGE_KEY = "ont:conduit-health-preview";
+const HEALTH_EVENT = "ont:health-connection-changed";
 
 export function AppleHealthSection({ period }: { period: HealthTrendPeriod }) {
   const [connected, setConnected] = useState(false);
@@ -35,11 +36,13 @@ export function AppleHealthSection({ period }: { period: HealthTrendPeriod }) {
     window.localStorage.setItem(STORAGE_KEY, "connected");
     setConnected(true);
     setSetupOpen(false);
+    window.dispatchEvent(new Event(HEALTH_EVENT));
   };
 
   const disconnect = () => {
     window.localStorage.removeItem(STORAGE_KEY);
     setConnected(false);
+    window.dispatchEvent(new Event(HEALTH_EVENT));
   };
 
   const copyWebhook = async () => {
