@@ -92,15 +92,14 @@ export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeV
         {visible.scores && <NutritionScores />}
 
         {visible.meals && <section className="meal-section">
-          <SectionTitle title="Today's meals" action="View diary" />
+          <SectionTitle title="Today's meals" />
           <div className="meal-list">
             {meals.map((meal) => (
-              <Card className="meal-row" key={meal.id}>
+              <div className="card meal-row" style={{ gridTemplateColumns: "64px minmax(0, 1fr) auto" }} key={meal.id}>
                 <Image src={meal.image} width={64} height={64} alt="" />
                 <div className="meal-copy"><span className={`meal-type ${meal.color}`}>{meal.type}</span><strong>{meal.name}</strong><small>{meal.detail}</small></div>
                 <div className="meal-kcal"><strong>{meal.kcal}</strong><span>kcal</span></div>
-                <button className="row-action" aria-label={`Add another ${meal.type}`} onClick={onAdd}><Plus size={19} /></button>
-              </Card>
+              </div>
             ))}
           </div>
         </section>}
@@ -114,7 +113,7 @@ export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeV
         </Card>}
 
         {visible.activity && <section>
-          <SectionTitle title="Activity" action="History" />
+          <SectionTitle title="Activity" />
           <Card className="activity-list">
             {activity.map((item, index) => (
               <div className="activity-row" key={item.label}>
