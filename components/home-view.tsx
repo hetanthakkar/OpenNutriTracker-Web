@@ -27,7 +27,27 @@ export const homeCustomizeOptions: Array<{ id: HomeSection; title: string; detai
   { id: "targets", title: "All nutrition targets", detail: "Complete nutrient data table" },
 ];
 
-export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeVisibility }) {
+type DemoActivity = { id: number; label: string; detail: string; kcal: number };
+
+export function HomeView({
+  visible,
+  waterMl,
+  weightKg,
+  extraActivities,
+  onLogActivity,
+  onAddWater,
+}: {
+  visible: HomeVisibility;
+  waterMl: number;
+  weightKg: number;
+  extraActivities: DemoActivity[];
+  onLogActivity: () => void;
+  onAddWater: () => void;
+}) {
+  const waterGoal = 1900;
+  const waterPercent = Math.round((waterMl / waterGoal) * 100);
+  const displayedActivities = [...activity, ...extraActivities];
+
   const quickStatsStyle: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -64,11 +84,11 @@ export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeV
         {visible.quickStats && <div className="quick-stats" style={quickStatsStyle}>
           <div style={quickStatItemStyle}>
             <Scale size={17} />
-            <span style={quickStatCopyStyle}><strong>87 kg</strong><small>Latest weight</small></span>
+            <span style={quickStatCopyStyle}><strong>{weightKg.toFixed(1).replace(".0", "")} kg</strong><small>Latest weight</small></span>
           </div>
           <div style={quickStatItemStyle}>
             <Droplets size={17} />
-            <span style={quickStatCopyStyle}><strong>1,200 ml</strong><small>of 1,900 ml</small></span>
+            <span style={quickStatCopyStyle}><strong>{waterMl.toLocaleString()} ml</strong><small>of {waterGoal.toLocaleString()} ml</small></span>
           </div>
         </div>}
 
@@ -115,23 +135,23 @@ export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeV
         {visible.activity && <section>
           <SectionTitle title="Activity" />
           <Card className="activity-list">
-            {activity.map((item, index) => (
-              <div className="activity-row" key={item.label}>
+            {displayedActivities.map((item, index) => (
+              <div className="activity-row" key={"id" in item ? item.id : `${item.label}-${index}`}>
                 <span className={index ? "round-icon amber" : "round-icon green"}>{index ? <Footprints size={19} /> : <Activity size={19} />}</span>
                 <div><strong>{item.label}</strong><small>{item.detail}</small></div>
                 <span><Flame size={14} /> {item.kcal} kcal</span>
               </div>
             ))}
-            <button className="secondary-button" onClick={onAdd}><Plus size={18} /> Log activity</button>
+            <button className="secondary-button" onClick={onLogActivity}><Plus size={18} /> Log activity</button>
           </Card>
         </section>}
 
         {visible.habits && <section>
           <SectionTitle title="Daily habits" />
           <Card className="habits-card">
-            <div className="habit-head"><span className="round-icon blue"><Droplets size={19} /></span><div><strong>Water</strong><span>1,200 of 1,900 ml</span></div><b>63%</b></div>
-            <ProgressBar value={63} color="var(--blue)" />
-            <button className="secondary-button" onClick={onAdd}><Plus size={18} /> Add a glass</button>
+            <div className="habit-head"><span className="round-icon blue"><Droplets size={19} /></span><div><strong>Water</strong><span>{waterMl.toLocaleString()} of {waterGoal.toLocaleString()} ml</span></div><b>{waterPercent}%</b></div>
+            <ProgressBar value={waterPercent} color="var(--blue)" />
+            <button className="secondary-button" onClick={onAddWater}><Plus size={18} /> Add a glass</button>
           </Card>
         </section>}
       </aside>

@@ -24,25 +24,39 @@ const bodyItems = [
   { icon: Droplets, title: "Daily water goal", value: "1,900 ml" },
 ];
 
+const demoProfiles = [
+  { name: "Alex Demo", member: "July 2026", bmi: "27.5" },
+  { name: "Jamie Demo", member: "August 2026", bmi: "23.1" },
+];
+
 export function ProfileView({ onToast, onOpenSettings }: ProfileViewProps) {
   const [notifications, setNotifications] = useState(true);
+  const [profileIndex, setProfileIndex] = useState(0);
+  const profile = demoProfiles[profileIndex];
+
+  const switchProfile = () => {
+    const next = (profileIndex + 1) % demoProfiles.length;
+    setProfileIndex(next);
+    onToast(`Switched to ${demoProfiles[next].name}.`);
+  };
+
   return (
     <div className="profile-layout">
       <div className="profile-main">
         <Card className="profile-hero">
-          <Image src="/images/avatar.jpg" alt="Alex Demo" width={92} height={92} />
-          <div><span className="eyebrow">Current profile</span><h2>Alex Demo</h2><p>Member since July 2026</p><button onClick={() => onToast("Profile switching is ready for data wiring.")}>Switch profile</button></div>
-          <div className="bmi-badge"><strong>27.5</strong><span>BMI</span></div>
+          <Image src="/images/avatar.jpg" alt={profile.name} width={92} height={92} />
+          <div><span className="eyebrow">Current profile</span><h2>{profile.name}</h2><p>Member since {profile.member}</p><button onClick={switchProfile}>Switch profile</button></div>
+          <div className="bmi-badge"><strong>{profile.bmi}</strong><span>BMI</span></div>
         </Card>
 
         <div className="profile-columns">
-          <ProfileGroup title="Your goal" items={goalItems} onToast={onToast} />
-          <ProfileGroup title="Measurements" items={bodyItems} onToast={onToast} />
+          <ProfileGroup title="Your goal" items={goalItems} />
+          <ProfileGroup title="Measurements" items={bodyItems} />
         </div>
       </div>
 
       <aside className="profile-aside">
-        <Card className="health-card"><span className="round-icon coral"><HeartPulse size={21} /></span><div><span>Health overview</span><strong>Pre-obesity</strong><small>Risk of comorbidities: increased</small></div><ChevronRight /></Card>
+        <Card className="health-card"><span className="round-icon coral"><HeartPulse size={21} /></span><div><span>Health overview</span><strong>Pre-obesity</strong><small>Risk of comorbidities: increased</small></div></Card>
         <section className="settings-section"><h2>Preferences</h2><Card>
           <SettingRow icon={Palette} title="Accent colour" value="Leaf green" onClick={() => onOpenSettings("accent")} />
           <SettingRow icon={Languages} title="Language" value="English" onClick={() => onOpenSettings("language")} />
@@ -58,8 +72,8 @@ export function ProfileView({ onToast, onOpenSettings }: ProfileViewProps) {
   );
 }
 
-function ProfileGroup({ title, items, onToast }: { title: string; items: typeof goalItems; onToast: ProfileViewProps["onToast"] }) {
-  return <section className="profile-group"><h2>{title}</h2><Card>{items.map(({ icon: Icon, title: itemTitle, value }) => <button key={itemTitle} onClick={() => onToast(`${itemTitle} editor opened.`)}><span className="round-icon green"><Icon size={19} /></span><span><strong>{itemTitle}</strong><small>{value}</small></span><ChevronRight size={19} /></button>)}</Card></section>;
+function ProfileGroup({ title, items }: { title: string; items: typeof goalItems }) {
+  return <section className="profile-group"><h2>{title}</h2><Card>{items.map(({ icon: Icon, title: itemTitle, value }) => <div className="profile-detail-row" key={itemTitle}><span className="round-icon green"><Icon size={19} /></span><span><strong>{itemTitle}</strong><small>{value}</small></span></div>)}</Card></section>;
 }
 
 function SettingRow({ icon: Icon, title, value, onClick }: { icon: typeof Palette; title: string; value: string; onClick: () => void }) {

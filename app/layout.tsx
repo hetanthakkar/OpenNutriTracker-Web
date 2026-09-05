@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { PwaRuntime } from "@/components/pwa-runtime";
 import "./globals.css";
 import "./settings-layout-fix.css";
+import "./interaction-fixes.css";
 import "./pwa.css";
 import "./redesign.css";
 
