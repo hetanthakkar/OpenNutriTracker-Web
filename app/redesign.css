@@ -1,0 +1,934 @@
+/*
+ * Professional redesign inspired by the information density and restraint of
+ * modern nutrition trackers. This file intentionally sits after the legacy
+ * styles so the underlying components/behaviour can stay unchanged.
+ */
+
+:root {
+  --canvas: #f6f7f8;
+  --surface: #ffffff;
+  --surface-muted: #f0f2f3;
+  --border: #e4e7e9;
+  --shadow: rgba(18, 24, 28, 0.05);
+  --accent: #147d64;
+  --accent-soft: #e7f3ef;
+  --text: #171b1d;
+  --muted: #687176;
+  --carbs: #d39b2e;
+  --fat: #d26752;
+  --protein: #4a78c2;
+  --blue: #3d8fa9;
+}
+
+:root[data-theme="dark"] {
+  --canvas: #111416;
+  --surface: #181c1f;
+  --surface-muted: #212629;
+  --border: #2b3236;
+  --shadow: rgba(0, 0, 0, 0.16);
+  --accent: #5bc7a9;
+  --accent-soft: #17352e;
+  --text: #f2f4f5;
+  --muted: #9ca6ab;
+  --carbs: #e1b45d;
+  --fat: #e38470;
+  --protein: #79a4e8;
+  --blue: #6db3ca;
+}
+
+html,
+body {
+  background: var(--canvas);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  font-weight: 450;
+  letter-spacing: -0.005em;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Shell */
+.app-shell {
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+.sidebar {
+  width: 214px;
+  padding: 22px 14px 16px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.brand {
+  gap: 9px;
+  padding: 0 10px 24px;
+  font-size: 15px;
+  font-weight: 720;
+  letter-spacing: -0.35px;
+}
+
+.brand img {
+  width: 30px;
+  height: 30px;
+}
+
+.sidebar nav {
+  gap: 4px;
+}
+
+.sidebar nav button,
+.sidebar-bottom > button {
+  min-height: 42px;
+  gap: 11px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sidebar nav button:hover,
+.sidebar-bottom > button:hover {
+  background: var(--surface-muted);
+}
+
+.sidebar nav button.active,
+.sidebar-bottom > button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.account-mini {
+  margin-top: 10px;
+  padding: 13px 8px 0;
+  grid-template-columns: 34px 1fr auto;
+}
+
+.account-mini img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.account-mini strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.account-mini span {
+  font-size: 10px;
+}
+
+main,
+.sidebar + main {
+  margin-left: 214px;
+}
+
+.topbar {
+  min-height: 74px;
+  padding: 14px clamp(20px, 3vw, 38px);
+  background: color-mix(in srgb, var(--surface), transparent 5%);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(18px);
+}
+
+.topbar h1 {
+  margin-top: 1px;
+  font-size: 23px;
+  font-weight: 720;
+  letter-spacing: -0.65px;
+}
+
+.eyebrow {
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.page-content {
+  max-width: 1240px;
+  padding: 22px clamp(20px, 3vw, 38px) 64px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.section-title {
+  margin: 0 2px 9px;
+}
+
+.section-title h2,
+.settings-section h2,
+.profile-group > h2 {
+  font-size: 14px;
+  font-weight: 680;
+  letter-spacing: -0.18px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 40px;
+  padding: 0 15px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.primary-button {
+  box-shadow: none;
+}
+
+.secondary-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.secondary-button:hover {
+  background: var(--surface-muted);
+}
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.text-button {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.progress {
+  height: 5px;
+  background: var(--surface-muted);
+}
+
+.round-icon {
+  width: 34px;
+  height: 34px;
+}
+
+/* Today */
+.home-layout {
+  grid-template-columns: minmax(0, 1.48fr) minmax(260px, 0.68fr);
+  gap: 20px;
+}
+
+.home-main,
+.home-aside {
+  gap: 18px;
+}
+
+.quick-stats {
+  gap: 8px !important;
+}
+
+.quick-stats > div,
+.quick-stats > button {
+  min-height: 55px;
+  padding: 9px 12px !important;
+  border-radius: 12px !important;
+  box-shadow: none;
+}
+
+.quick-stats strong {
+  font-size: 14px;
+  font-weight: 680;
+}
+
+.quick-stats small {
+  font-size: 10px;
+}
+
+.energy-card {
+  padding: 18px 20px 20px;
+}
+
+.energy-heading h2 {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.on-track {
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.energy-body {
+  grid-template-columns: 1fr 160px 1fr;
+  padding: 10px 4% 15px;
+}
+
+.donut {
+  width: 148px;
+  background: conic-gradient(var(--accent) var(--value), var(--surface-muted) 0);
+}
+
+.donut::after {
+  width: 82%;
+}
+
+.donut strong {
+  font-size: 27px;
+  font-weight: 720;
+}
+
+.donut span {
+  font-size: 10px;
+}
+
+.energy-stat strong {
+  margin-top: 5px;
+  font-size: 15px;
+  font-weight: 680;
+}
+
+.energy-stat small {
+  font-size: 10px;
+}
+
+.macro-grid {
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.macro-grid > div {
+  padding: 0 8px;
+  background: transparent;
+  border-radius: 0;
+}
+
+.macro-grid > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.macro-grid span:first-child {
+  font-size: 10px;
+}
+
+.macro-grid strong {
+  margin: 5px 0 7px;
+  font-size: 14px;
+  font-weight: 680;
+}
+
+.macro-grid strong small {
+  font-size: 9px;
+}
+
+.meal-list {
+  gap: 7px;
+}
+
+.meal-row {
+  min-height: 68px;
+  padding: 8px 10px !important;
+  gap: 11px;
+  border-radius: 13px;
+  box-shadow: none;
+}
+
+.meal-row img {
+  width: 50px;
+  height: 50px;
+  border-radius: 11px;
+}
+
+.meal-type {
+  font-size: 8px;
+  letter-spacing: 0.07em;
+}
+
+.meal-copy strong {
+  margin: 1px 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.meal-copy small,
+.meal-kcal span {
+  font-size: 9px;
+}
+
+.meal-kcal strong {
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.streak-card {
+  padding: 14px;
+  gap: 10px;
+  border-radius: 13px;
+}
+
+.streak-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.streak-card strong {
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.streak-card div > span,
+.streak-card .best {
+  font-size: 9px;
+}
+
+.activity-list,
+.habits-card {
+  padding: 4px 14px 14px;
+}
+
+.activity-row {
+  padding: 10px 0;
+}
+
+.activity-row div strong,
+.habit-head div strong {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.activity-row div small,
+.habit-head div span,
+.activity-row > span:last-child {
+  font-size: 9px;
+}
+
+.habits-card .secondary-button,
+.activity-list .secondary-button {
+  margin-top: 10px;
+  min-height: 36px;
+}
+
+/* Nutrition summary */
+.nutrition-score-card {
+  padding: 17px;
+}
+
+.score-overall {
+  gap: 14px;
+  padding-bottom: 14px;
+}
+
+.score-overall div > strong {
+  font-size: 15px;
+  font-weight: 690;
+}
+
+.score-overall p {
+  font-size: 9px;
+}
+
+.score-breakdown {
+  gap: 8px;
+}
+
+.score-breakdown > div {
+  padding: 9px;
+  border-radius: 10px;
+  background: var(--canvas);
+}
+
+.score-breakdown strong {
+  font-size: 10px;
+}
+
+.score-breakdown small {
+  font-size: 8px;
+}
+
+.score-ring {
+  box-shadow: none;
+}
+
+.targets-heading {
+  margin-top: 4px;
+}
+
+.targets-heading h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.targets-heading p {
+  font-size: 10px;
+}
+
+.segmented {
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.segmented button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.segmented button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.all-targets-section .card {
+  border-radius: 13px !important;
+  box-shadow: none !important;
+}
+
+.targets-card {
+  overflow: hidden;
+}
+
+.target-table-head,
+.target-row {
+  font-size: 10px;
+}
+
+/* Diary */
+.diary-layout {
+  grid-template-columns: minmax(250px, 305px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.calendar-card {
+  padding: 16px;
+  border-radius: 14px;
+  align-self: start;
+}
+
+.calendar-head h2 {
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.calendar-head button,
+.date-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.weekdays span,
+.calendar-grid button {
+  font-size: 9px;
+}
+
+.calendar-grid button {
+  min-height: 34px;
+  border-radius: 8px;
+}
+
+.calendar-grid button.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.calendar-legend {
+  font-size: 8px;
+}
+
+.diary-date {
+  margin-bottom: 10px;
+}
+
+.diary-date h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.diary-summary {
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.diary-summary > div:first-child > span,
+.diary-macros p span {
+  font-size: 10px;
+}
+
+.diary-summary > div:first-child > strong {
+  font-size: 20px;
+  font-weight: 720;
+}
+
+.diary-groups {
+  gap: 15px;
+}
+
+.diary-groups .card {
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.diary-meal {
+  min-height: 64px;
+  padding: 8px 10px;
+}
+
+.diary-meal img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.diary-meal strong,
+.diary-meal b {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.diary-meal span,
+.inline-add {
+  font-size: 9px;
+}
+
+.inline-add {
+  min-height: 36px;
+  color: var(--accent);
+  font-weight: 650;
+}
+
+/* Trends */
+.trends-page {
+  gap: 18px;
+}
+
+.trends-head h2 {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.trends-head p {
+  font-size: 10px;
+}
+
+.trend-kpis {
+  gap: 10px;
+}
+
+.trend-kpis .card {
+  min-height: 80px;
+  padding: 13px;
+  border-radius: 13px;
+}
+
+.trend-kpis span,
+.trend-kpis em {
+  font-size: 9px;
+}
+
+.trend-kpis strong {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.trend-grid {
+  gap: 12px;
+}
+
+.chart-card,
+.average-card {
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.chart-title > div > span {
+  font-size: 9px;
+}
+
+.chart-title strong {
+  font-size: 16px;
+  font-weight: 690;
+}
+
+.chart-title strong small,
+.chart-pill {
+  font-size: 8px;
+}
+
+/* Profile/settings inherit the same flatter language. */
+.profile-card,
+.profile-hero,
+.settings-card,
+.settings-section .card,
+.settings-category,
+.profile-group .card {
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.settings-row,
+.profile-row {
+  min-height: 52px;
+}
+
+/* Add sheet */
+.modal-backdrop {
+  background: rgba(15, 20, 23, 0.32);
+  backdrop-filter: blur(3px);
+}
+
+.add-sheet {
+  border-radius: 18px 18px 0 0;
+  border: 1px solid var(--border);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.add-sheet h2 {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.add-action {
+  min-height: 60px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.add-action strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.add-action small {
+  font-size: 9px;
+}
+
+.toast {
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  font-size: 11px;
+}
+
+/* Tablet */
+@media (max-width: 1100px) and (min-width: 761px) {
+  .sidebar {
+    width: 76px;
+    padding-inline: 10px;
+  }
+
+  main,
+  .sidebar + main {
+    margin-left: 76px;
+  }
+
+  .home-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .home-aside {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Mobile/PWA */
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 65px;
+    padding: 10px 15px 9px;
+    background: color-mix(in srgb, var(--surface), transparent 3%);
+  }
+
+  .topbar h1 {
+    font-size: 20px;
+  }
+
+  .topbar .eyebrow {
+    font-size: 8px;
+  }
+
+  .page-content {
+    padding: 13px 12px 92px;
+  }
+
+  .card {
+    border-radius: 13px;
+  }
+
+  .home-main,
+  .home-aside {
+    gap: 15px;
+  }
+
+  .quick-stats {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    overflow: visible !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .quick-stats > div,
+  .quick-stats > button {
+    min-width: 0 !important;
+    min-height: 52px;
+  }
+
+  .energy-card {
+    padding: 15px 14px 16px;
+  }
+
+  .energy-body {
+    grid-template-columns: 1fr 126px 1fr;
+    padding: 9px 0 13px;
+  }
+
+  .donut {
+    width: 116px;
+  }
+
+  .donut strong {
+    font-size: 23px;
+  }
+
+  .energy-stat .round-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .energy-stat strong {
+    font-size: 12px;
+  }
+
+  .macro-grid {
+    gap: 3px;
+  }
+
+  .macro-grid > div {
+    padding-inline: 6px;
+  }
+
+  .macro-grid strong {
+    font-size: 12px;
+  }
+
+  .meal-row {
+    grid-template-columns: 46px minmax(0, 1fr) auto !important;
+    min-height: 62px;
+  }
+
+  .meal-row img {
+    width: 46px;
+    height: 46px;
+  }
+
+  .nutrition-score-card {
+    padding: 14px;
+  }
+
+  .score-breakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .targets-heading {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .targets-heading .segmented {
+    width: 100%;
+  }
+
+  .targets-heading .segmented button {
+    flex: 1;
+  }
+
+  .diary-layout {
+    display: block;
+  }
+
+  .calendar-card {
+    display: none;
+  }
+
+  .diary-date h2 {
+    font-size: 16px;
+  }
+
+  .diary-summary {
+    padding: 14px;
+  }
+
+  .trends-head {
+    gap: 10px;
+  }
+
+  .trends-head .segmented {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .trends-head .segmented button {
+    white-space: nowrap;
+    flex: 1 0 auto;
+  }
+
+  .trend-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .trend-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-nav {
+    height: 68px;
+    grid-template-columns: 1fr 1fr 58px 1fr 1fr;
+    background: color-mix(in srgb, var(--surface), transparent 2%);
+    padding: 0 4px max(4px, env(safe-area-inset-bottom));
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-nav button:not(.mobile-add) {
+    height: 55px;
+    gap: 1px;
+    font-size: 8px;
+    font-weight: 600;
+  }
+
+  .mobile-nav button:not(.mobile-add) svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-add {
+    align-self: center;
+    transform: none;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .add-sheet {
+    border-radius: 17px 17px 0 0;
+  }
+}
