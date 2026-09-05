@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Activity, ArrowDownRight, Droplets, Flame, Scale, TrendingDown } from "lucide-react";
 import { LineChart } from "./charts";
 import { AppleHealthSection } from "./apple-health-section";
+import { ExpenditureCard } from "./expenditure-card";
 import { Card, ProgressBar } from "./ui";
 
 const trendData = {
@@ -46,6 +47,9 @@ export function TrendsView() {
         <div><span className="eyebrow">Your progress</span><h2>Small steps, visible progress</h2><p>Daily averages and habits based on your logged entries.</p></div>
         <div className="segmented">{periods.map((item) => <button key={item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div>
       </div>
+
+      <ExpenditureCard period={period} />
+
       <div className="trend-kpis">
         <Card><span className="round-icon green"><Flame size={20} /></span><div><span>Current streak</span><strong>7 <small>days</small></strong></div><em>Best 12</em></Card>
         <Card><span className="round-icon teal"><Scale size={20} /></span><div><span>Weight change</span><strong>−1.8 <small>kg</small></strong></div><em className="positive"><ArrowDownRight size={15} /> 2.0%</em></Card>
