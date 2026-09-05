@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./settings-layout-fix.css";
 
 export const metadata: Metadata = {
   title: "OpenNutriTracker — Web prototype",
