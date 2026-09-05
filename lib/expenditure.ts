@@ -127,6 +127,7 @@ export function estimateAdaptiveExpenditure(
   const trendWeights = robustWeightTrend(rows, profile.weightKg);
   const history: ExpenditureDay[] = [];
   const observedIntakes: number[] = [];
+  const fatMassHistory: Array<number | undefined> = [];
   let estimate = prior;
   let fatMassKg = profile.bodyFatPercent != null
     ? profile.weightKg * clamp(profile.bodyFatPercent / 100, 0.03, 0.7)
@@ -148,6 +149,7 @@ export function estimateAdaptiveExpenditure(
       fatMassKg = Math.max(0.1, fatMassKg + deltaWeight * (1 - leanFraction));
       energyDensity = energyDensityForWeightChangeKcalPerKg(fatMassKg);
     }
+    fatMassHistory.push(fatMassKg);
 
     const windowStart = Math.max(0, i - 13);
     const spanDays = i - windowStart + 1;
@@ -177,7 +179,7 @@ export function estimateAdaptiveExpenditure(
       }
 
       let bodyEnergyChange = 0;
-      let rollingFatMass = fatMassKg;
+      let rollingFatMass = fatMassHistory[windowStart];
       for (let j = windowStart + 1; j <= i; j += 1) {
         const deltaWeight = trendWeights[j] - trendWeights[j - 1];
         const density = energyDensityForWeightChangeKcalPerKg(rollingFatMass);
@@ -190,7 +192,7 @@ export function estimateAdaptiveExpenditure(
 
       observedTdee = clamp((intakeTotal - bodyEnergyChange) / spanDays, 1200, 5000);
 
-      const maturity = clamp((spanDays - 6) / 14, 0.15, 1);
+      const maturity = clamp((i + 1 - 6) / 21, 0.15, 1);
       confidence = clamp(
         maturity * (0.62 * intakeCoverage + 0.38 * weightCoverage),
         0,
@@ -265,7 +267,6 @@ function robustWeightTrend(rows: DailyEnergyObservation[], fallbackWeightKg: num
   const result: number[] = [];
 
   for (const row of rows) {
-    // Predict a constant-velocity state one day forward.
     xWeight += xVelocity;
     const pp00 = p00 + p01 + p10 + p11 + 0.015;
     const pp01 = p01 + p11;
@@ -278,10 +279,8 @@ function robustWeightTrend(rows: DailyEnergyObservation[], fallbackWeightKg: num
 
     const measurement = finitePositive(row.weightKg);
     if (measurement != null) {
-      // Winsorize implausibly large one-day innovations so water/sodium spikes
-      // do not dominate the latent weight state.
       const innovation = clamp(measurement - xWeight, -1.5, 1.5);
-      const measurementVariance = 0.16; // ~0.4 kg SD scale + biological noise.
+      const measurementVariance = 0.16;
       const s = p00 + measurementVariance;
       const k0 = p00 / s;
       const k1 = p10 / s;
