@@ -91,6 +91,11 @@ export function energyDensityForWeightChangeKcalPerKg(fatMassKg?: number): numbe
 /**
  * Estimate free-living TDEE from logged intake and body-energy change.
  *
+ * Each row represents one calendar day. weightKg should preferably be a
+ * morning measurement; caloriesKcal is that calendar day's completed intake.
+ * Therefore an estimate at the morning of day N uses completed intake through
+ * day N-1 and weight change through the morning of day N.
+ *
  * Research-backed pieces:
  * - Mifflin-St Jeor is used only as the cold-start prior.
  * - Hall/Forbes body-composition energetics convert trend-weight change into
@@ -98,7 +103,7 @@ export function energyDensityForWeightChangeKcalPerKg(fatMassKg?: number): numbe
  *
  * Engineering choices (deliberately isolated here):
  * - robust constant-velocity Kalman filter for scale-weight noise
- * - 14-day rolling evidence window
+ * - up to 14 completed intake days per evidence window
  * - median imputation for missing intake, with reduced confidence
  * - Apple Health steps alter update responsiveness only; they are never
  *   converted into calories.
@@ -151,27 +156,30 @@ export function estimateAdaptiveExpenditure(
     }
     fatMassHistory.push(fatMassKg);
 
-    const windowStart = Math.max(0, i - 13);
-    const spanDays = i - windowStart + 1;
-    const windowRows = rows.slice(windowStart, i + 1);
-    const windowLogged = windowRows.filter((item) => finitePositive(item.caloriesKcal) != null).length;
-    const windowWeights = windowRows.filter((item) => finitePositive(item.weightKg) != null).length;
-    const intakeCoverage = windowLogged / spanDays;
-    const weightCoverage = windowWeights / spanDays;
+    // Weight change from windowStart morning -> i morning is paired with intake
+    // from windowStart -> i-1. That gives the same number of energy intervals.
+    const windowStart = Math.max(0, i - 14);
+    const intervalDays = i - windowStart;
+    const intakeRows = rows.slice(windowStart, i);
+    const weightRows = rows.slice(windowStart, i + 1);
+    const windowLogged = intakeRows.filter((item) => finitePositive(item.caloriesKcal) != null).length;
+    const windowWeights = weightRows.filter((item) => finitePositive(item.weightKg) != null).length;
+    const intakeCoverage = intervalDays > 0 ? windowLogged / intervalDays : 0;
+    const weightCoverage = weightRows.length > 0 ? windowWeights / weightRows.length : 0;
 
     let observedTdee: number | null = null;
     let confidence = 0;
     let stepResponseMultiplier = 1;
 
-    if (spanDays >= 7 && windowLogged >= 4 && windowWeights >= 3) {
+    if (intervalDays >= 7 && windowLogged >= 4 && windowWeights >= 3) {
       let intakeTotal = 0;
-      for (let j = windowStart; j <= i; j += 1) {
+      for (let j = windowStart; j < i; j += 1) {
         const logged = finitePositive(rows[j].caloriesKcal);
         if (logged != null) {
           intakeTotal += logged;
         } else {
           const priorLogged = rows
-            .slice(Math.max(windowStart, j - 14), j)
+            .slice(Math.max(0, j - 14), j)
             .map((item) => finitePositive(item.caloriesKcal))
             .filter((item): item is number => item != null);
           intakeTotal += median(priorLogged) ?? estimate;
@@ -190,16 +198,18 @@ export function estimateAdaptiveExpenditure(
         }
       }
 
-      observedTdee = clamp((intakeTotal - bodyEnergyChange) / spanDays, 1200, 5000);
+      observedTdee = clamp((intakeTotal - bodyEnergyChange) / intervalDays, 1200, 5000);
 
-      const maturity = clamp((i + 1 - 6) / 21, 0.15, 1);
+      const maturity = clamp((i - 6) / 21, 0.15, 1);
       confidence = clamp(
         maturity * (0.62 * intakeCoverage + 0.38 * weightCoverage),
         0,
         0.98,
       );
 
-      stepResponseMultiplier = activityResponseMultiplier(rows, i, windowStart);
+      // Use the most recently completed activity day. Steps alter only the
+      // update rate, not the expenditure observation itself.
+      stepResponseMultiplier = activityResponseMultiplier(rows, i - 1, windowStart);
       const baseAlpha = 0.06 + 0.16 * confidence;
       const alpha = clamp(baseAlpha * stepResponseMultiplier, 0.05, 0.32);
       const requestedChange = (observedTdee - estimate) * alpha;
@@ -238,22 +248,21 @@ export function estimateAdaptiveExpenditure(
 
 function activityResponseMultiplier(
   rows: DailyEnergyObservation[],
-  currentIndex: number,
+  activityIndex: number,
   windowStart: number,
 ): number {
-  const currentSteps = finitePositive(rows[currentIndex]?.steps);
+  if (activityIndex < 0) return 1;
+  const currentSteps = finitePositive(rows[activityIndex]?.steps);
   if (currentSteps == null) return 1;
 
   const baselineSteps = rows
-    .slice(windowStart, currentIndex)
+    .slice(windowStart, activityIndex)
     .map((row) => finitePositive(row.steps))
     .filter((value): value is number => value != null);
   const baseline = median(baselineSteps);
   if (baseline == null || baseline < 1000) return 1;
 
   const deviation = Math.abs(currentSteps - baseline) / baseline;
-  // Steps never add/subtract calories. A meaningful activity shift only permits
-  // the weight/intake-derived estimate to adapt faster.
   return clamp(1 + Math.max(0, deviation - 0.15) * 0.8, 1, 1.35);
 }
 
