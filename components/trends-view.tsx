@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Activity, ArrowDownRight, Droplets, Flame, Scale, TrendingDown } from "lucide-react";
 import { LineChart } from "./charts";
+import { AppleHealthSection } from "./apple-health-section";
 import { Card, ProgressBar } from "./ui";
 
 const trendData = {
@@ -72,6 +73,7 @@ export function TrendsView() {
           <LineChart values={[...data.water]} color="var(--blue)" labels={[...data.labels]} />
         </Card>
       </div>
+      <AppleHealthSection period={period} />
     </div>
   );
 }
