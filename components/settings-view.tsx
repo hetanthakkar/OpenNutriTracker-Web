@@ -8,6 +8,7 @@ import {
   Palette, Percent, PieChart, Plus, Ruler, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles,
   UserPlus, Users, Utensils, Weight, X,
 } from "lucide-react";
+import { getDemoAdaptivePlan } from "@/lib/expenditure-demo";
 import { Card } from "./ui";
 import { type HomeVisibility, defaultHomeVisibility, homeCustomizeOptions } from "./home-view";
 
@@ -50,6 +51,8 @@ const initialSettings: SettingsState = {
   notifications: true, notificationTime: "19:00",
 };
 
+const demoAdaptivePlan = getDemoAdaptivePlan(false);
+
 type SettingsViewProps = {
   dark: boolean;
   initialPanel?: SettingsPanelId | null;
@@ -85,7 +88,7 @@ export function SettingsView({ dark, initialPanel, onSetDark, onToast, homeVisib
     {
       title: "Goals & calculations", description: "Tune the targets used for your daily plan.",
       items: [
-        { id: "calorie-goal", icon: Calculator, title: "Calorie goal explained", value: "2,855 kcal today" },
+        { id: "calorie-goal", icon: Calculator, title: "Calorie goal explained", value: `${demoAdaptivePlan.caloriePlan.targetKcal.toLocaleString()} kcal today` },
         { id: "calorie-adjustment", icon: Percent, title: "Calorie adjustment", value: settings.calorieAdjustment === 0 ? "No adjustment" : `${settings.calorieAdjustment > 0 ? "+" : ""}${settings.calorieAdjustment} kcal` },
         { id: "macro-split", icon: PieChart, title: "Macro split", value: `${settings.carbs}% / ${settings.fat}% / ${settings.protein}%` },
         { id: "meal-split", icon: Utensils, title: "Per-meal calorie share", value: "Breakfast, lunch, dinner & snack" },
@@ -317,7 +320,10 @@ function AccentPicker({ value, onChange }: { value: string; onChange: (value: st
   </div>;
 }
 
-function CalorieExplanation() { return <div className="calorie-equation"><div><span>Base expenditure</span><strong>2,606 kcal</strong></div><b>+</b><div><span>Activity today</span><strong>249 kcal</strong></div><b>=</b><div className="total"><span>Today’s goal</span><strong>2,855 kcal</strong></div><InfoBox>Your goal updates with logged activity. The production app uses your profile and IOM 2005 energy equations.</InfoBox></div>; }
+function CalorieExplanation() {
+  const plan = demoAdaptivePlan.caloriePlan;
+  return <div className="calorie-equation"><div><span>Adaptive expenditure</span><strong>{plan.expenditureKcal.toLocaleString()} kcal</strong></div><b>+</b><div><span>Weight-goal adjustment</span><strong>{plan.dailyEnergyAdjustmentKcal > 0 ? "+" : ""}{plan.dailyEnergyAdjustmentKcal.toLocaleString()} kcal</strong></div><b>=</b><div className="total"><span>Today’s goal</span><strong>{plan.targetKcal.toLocaleString()} kcal</strong></div><InfoBox>Activity calories are not added separately. Expenditure is learned from calorie intake and trend weight; optional Apple Health activity only helps the estimate respond to changing activity patterns.</InfoBox></div>;
+}
 
 function NutrientInputs() { return <div className="nutrient-inputs">{[["Fiber", "30", "g"], ["Sodium", "2300", "mg"], ["Potassium", "3500", "mg"], ["Vitamin C", "90", "mg"], ["Iron", "18", "mg"], ["Calcium", "1000", "mg"]].map(([label, value, unit]) => <label key={label}><span>{label}</span><div><input defaultValue={value} inputMode="decimal" /><b>{unit}</b></div></label>)}</div>; }
 
