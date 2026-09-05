@@ -4,7 +4,7 @@ const PADDLE_OCR_ESM = "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4
 const ORT_WASM_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
 
 // PaddleOCR's default model host can be extremely slow outside China.
-// These are byte-for-byte mirrors of the official PP-OCRv6 tiny archives.
+// These are mirrors of the official PP-OCRv6 tiny archives.
 const DET_MODEL_URL =
   "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_tiny_det_onnx_infer.tar";
 const REC_MODEL_URL =
@@ -89,6 +89,11 @@ async function getOcr(): Promise<PaddleInstance> {
           textDetectionModelAsset: { url: DET_MODEL_URL },
           textRecognitionModelName: "PP-OCRv6_tiny_rec",
           textRecognitionModelAsset: { url: REC_MODEL_URL },
+
+          // Critical for a PWA: model initialization, OpenCV, ONNX Runtime,
+          // detection and recognition must not run on the UI thread.
+          worker: true,
+
           ortOptions: {
             backend: "wasm",
             wasmPaths: ORT_WASM_PATH,
@@ -98,7 +103,7 @@ async function getOcr(): Promise<PaddleInstance> {
         });
       })(),
       INIT_TIMEOUT_MS,
-      "PaddleOCR initialization timed out after 45 seconds. Check the browser Network tab for a blocked model or WASM request.",
+      "PaddleOCR initialization timed out after 45 seconds. Check the browser Network and Console tabs for a blocked worker, model, or WASM request.",
     ).catch((error) => {
       ocrPromise = null;
       throw error;
@@ -111,7 +116,7 @@ async function getOcr(): Promise<PaddleInstance> {
 export async function recognizeNutritionLabel(image: Blob): Promise<BrowserOcrResult> {
   const ocr = await getOcr();
   const [result] = await ocr.predict(image, {
-    textDetLimitSideLen: 1280,
+    textDetLimitSideLen: 960,
     textDetBoxThresh: 0.45,
     textRecScoreThresh: 0.35,
   });
