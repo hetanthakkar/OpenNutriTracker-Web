@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Activity, ArrowDown, Droplets, Flame, Footprints, Plus, Scale } from "lucide-react";
 import { activity, meals } from "@/lib/mock-data";
 import { Donut } from "./charts";
@@ -20,7 +19,7 @@ export const homeCustomizeOptions: Array<{ id: HomeSection; title: string; detai
   { id: "quickStats", title: "Quick stats", detail: "Weight and water" },
   { id: "energy", title: "Calorie budget", detail: "Energy and macro rings" },
   { id: "scores", title: "Nutrition scores", detail: "Daily nutrition quality" },
-  { id: "meals", title: "Today's meals", detail: "Logged breakfast, lunch and snacks" },
+  { id: "meals", title: "Today's meals", detail: "Logged meals and times" },
   { id: "activity", title: "Activity", detail: "Exercise and calorie burn" },
   { id: "habits", title: "Daily habits", detail: "Hydration progress" },
   { id: "streak", title: "Tracking streak", detail: "Current and best streak" },
@@ -113,15 +112,29 @@ export function HomeView({
 
         {visible.meals && <section className="meal-section">
           <SectionTitle title="Today's meals" />
-          <div className="meal-list">
-            {meals.map((meal) => (
-              <div className="card meal-row" style={{ gridTemplateColumns: "64px minmax(0, 1fr) auto" }} key={meal.id}>
-                <Image src={meal.image} width={64} height={64} alt="" />
-                <div className="meal-copy"><span className={`meal-type ${meal.color}`}>{meal.type}</span><strong>{meal.name}</strong><small>{meal.detail}</small></div>
+          <Card style={{ overflow: "hidden" }}>
+            {meals.map((meal, index) => (
+              <div
+                key={meal.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "76px minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: 14,
+                  minHeight: 64,
+                  padding: "11px 16px",
+                  borderBottom: index < meals.length - 1 ? "1px solid var(--border)" : "0",
+                }}
+              >
+                <time style={{ color: "var(--muted)", fontSize: 11, fontWeight: 800 }}>{meal.time}</time>
+                <div className="meal-copy">
+                  <strong>{meal.name}</strong>
+                  <small>{meal.detail}</small>
+                </div>
                 <div className="meal-kcal"><strong>{meal.kcal}</strong><span>kcal</span></div>
               </div>
             ))}
-          </div>
+          </Card>
         </section>}
       </div>
 
