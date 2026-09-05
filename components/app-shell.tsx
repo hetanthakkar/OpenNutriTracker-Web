@@ -22,11 +22,11 @@ const navigation = [
 ];
 
 const addActions = [
-  { label: "Add a meal", detail: "Search foods or build a meal", icon: Utensils, tone: "green" },
-  { label: "Scan a barcode", detail: "Quickly find a packaged food", icon: ScanLine, tone: "teal" },
-  { label: "Log activity", detail: "Record a workout or a walk", icon: Activity, tone: "amber" },
+  { label: "Add food", detail: "Search foods or build a meal", icon: Utensils, tone: "green" },
+  { label: "Scan barcode", detail: "Find a packaged food", icon: ScanLine, tone: "teal" },
+  { label: "Log activity", detail: "Record a workout or walk", icon: Activity, tone: "amber" },
   { label: "Log water", detail: "Add to today’s hydration", icon: Droplets, tone: "blue" },
-  { label: "Update weight", detail: "Keep your trend up to date", icon: Weight, tone: "coral" },
+  { label: "Update weight", detail: "Keep your trend current", icon: Weight, tone: "coral" },
 ];
 
 function pageFromUrl(rawUrl: string): PageId | null {
@@ -83,7 +83,7 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const title = page === "home" ? "Good morning, Alex" : page === "settings" ? "Settings" : navigation.find((item) => item.id === page)?.label;
+  const title = page === "home" ? "Today" : page === "settings" ? "Settings" : navigation.find((item) => item.id === page)?.label;
   const openSettings = (panel?: SettingsPanelId) => {
     setSettingsPanel(panel ?? null);
     setPage("settings");
@@ -99,17 +99,17 @@ export function AppShell() {
         <nav aria-label="Primary navigation">
           {navigation.map(({ id, label, icon: Icon }) => (
             <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}>
-              <Icon size={22} strokeWidth={page === id ? 2.6 : 2} />
+              <Icon size={20} strokeWidth={page === id ? 2.4 : 2} />
               <span>{label}</span>
             </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button className={page === "settings" ? "active" : ""} onClick={() => openSettings()}><Settings size={21} /><span>Settings</span></button>
+          <button className={page === "settings" ? "active" : ""} onClick={() => openSettings()}><Settings size={20} /><span>Settings</span></button>
           <div className="account-mini">
             <Image src="/images/avatar.jpg" alt="Alex Demo" width={42} height={42} />
             <div><strong>Alex Demo</strong><span>Demo profile</span></div>
-            <ChevronDown size={18} />
+            <ChevronDown size={16} />
           </div>
         </div>
       </aside>
@@ -121,7 +121,7 @@ export function AppShell() {
             <h1>{title}</h1>
           </div>
           <div className="topbar-actions">
-            <button className="primary-button" onClick={() => setAddOpen(true)}><Plus size={20} /> Add entry</button>
+            <button className="primary-button" onClick={() => setAddOpen(true)}><Plus size={18} /> Log food</button>
           </div>
         </header>
 
@@ -136,11 +136,11 @@ export function AppShell() {
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {navigation.slice(0, 2).map(({ id, label, icon: Icon }) => (
-          <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><Icon size={22} /><span>{label}</span></button>
+          <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><Icon size={21} /><span>{label}</span></button>
         ))}
-        <button className="mobile-add" aria-label="Add entry" onClick={() => setAddOpen(true)}><Plus size={29} /></button>
+        <button className="mobile-add" aria-label="Log food" onClick={() => setAddOpen(true)}><Plus size={24} /></button>
         {navigation.slice(2).map(({ id, label, icon: Icon }) => (
-          <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><Icon size={22} /><span>{label}</span></button>
+          <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><Icon size={21} /><span>{label}</span></button>
         ))}
       </nav>
 
@@ -148,11 +148,11 @@ export function AppShell() {
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setAddOpen(false)}>
           <section className="add-sheet" role="dialog" aria-modal="true" aria-labelledby="add-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="sheet-handle" />
-            <div className="sheet-header"><div><span className="eyebrow">Saturday, September 5</span><h2 id="add-title">What would you like to log?</h2></div><button className="icon-button" aria-label="Close" onClick={() => setAddOpen(false)}><X size={20} /></button></div>
+            <div className="sheet-header"><div><span className="eyebrow">Saturday, September 5</span><h2 id="add-title">Log something</h2></div><button className="icon-button" aria-label="Close" onClick={() => setAddOpen(false)}><X size={19} /></button></div>
             <div className="add-grid">
               {addActions.map(({ label, detail, icon: Icon, tone }) => (
                 <button key={label} className="add-action" onClick={() => { setAddOpen(false); setToast(`${label} selected — ready for backend wiring.`); }}>
-                  <span className={`icon-badge ${tone}`}><Icon size={22} /></span><span><strong>{label}</strong><small>{detail}</small></span>
+                  <span className={`icon-badge ${tone}`}><Icon size={20} /></span><span><strong>{label}</strong><small>{detail}</small></span>
                 </button>
               ))}
             </div>
