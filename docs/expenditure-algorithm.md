@@ -65,13 +65,15 @@ Scale measurements contain short-term noise from fluid, glycogen, sodium, gut co
 
 The filter is causal: today's estimate does not look at future measurements.
 
-### Evidence window
+### Evidence window and timing
 
-Observed expenditure uses the most recent 14 days once there are at least:
+A morning weight on day N is paired with completed calorie intake through day N-1. A 14-day expenditure window therefore uses up to 14 completed intake days bounded by the corresponding morning trend-weight change. Same-day incomplete intake is never paired with that morning's weight.
 
-- 7 calendar days of history
-- 4 days with calorie intake
-- 3 days with scale weight
+An observed expenditure update begins once there are at least:
+
+- 7 completed energy-balance intervals
+- 4 logged calorie days
+- 3 scale measurements across the bounded weight window
 
 This makes the estimator degrade gracefully rather than requiring perfect daily logging.
 
@@ -93,6 +95,25 @@ Reference:
 
 - *The accuracy of Apple Watch measurements: a living systematic review and meta-analysis.* npj Digital Medicine. 2026. https://www.nature.com/articles/s41746-025-02238-1
 
+## Calorie target
+
+The daily calorie target no longer adds exercise calories to a static base target. It uses:
+
+```text
+target intake = adaptive TDEE + desired daily change in stored body energy
+```
+
+For a weight-loss goal, the stored-body-energy term is negative. Its magnitude uses the same Hall/Forbes energy density as the expenditure estimator rather than a fixed 7,700 kcal/kg rule.
+
+Example for a -0.40 kg/week goal:
+
+```text
+daily energy adjustment = (-0.40 kg / 7) × current predicted kcal/kg
+calorie target = adaptive TDEE + daily energy adjustment
+```
+
+Because adaptive TDEE is relearned continuously, metabolic and activity changes can flow into the target without separately adding wearable exercise calories.
+
 ## Confidence
 
 Confidence is derived from:
@@ -110,8 +131,8 @@ The estimator accepts one daily record:
 ```ts
 {
   date: "2026-09-05",
-  caloriesKcal: 2410, // optional
-  weightKg: 87.2,     // optional
+  caloriesKcal: 2410, // completed intake for this date; optional
+  weightKg: 87.2,     // preferably morning weight; optional
   steps: 9842,        // optional Apple Health
   workoutMinutes: 42  // optional Apple Health
 }
