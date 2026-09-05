@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`card ${className}`}>{children}</section>;
@@ -9,7 +8,7 @@ export function SectionTitle({ title, action }: { title: string; action?: string
   return (
     <div className="section-title">
       <h2>{title}</h2>
-      {action && <button className="text-button">{action}<ChevronRight size={16} /></button>}
+      {action && <span style={{ color: "var(--muted)", fontSize: 12, fontWeight: 800 }}>{action}</span>}
     </div>
   );
 }

@@ -1,0 +1,27 @@
+/* Remove decorative controls that do not represent an action in the prototype. */
+.accent-preview > button {
+  display: none !important;
+}
+
+/* Profile goal/measurement rows are informational until an editor exists. */
+.profile-detail-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.profile-detail-row + .profile-detail-row {
+  border-top: 1px solid var(--border);
+}
+
+.profile-detail-row > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.profile-detail-row small {
+  color: var(--muted);
+}

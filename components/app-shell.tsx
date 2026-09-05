@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import {
-  Activity, BarChart3, BookOpen, ChevronDown, Home, Plus, Settings,
+  Activity, BarChart3, BookOpen, Home, Plus, Settings,
   UserRound, Utensils, Weight, X, Droplets, ScanLine,
 } from "lucide-react";
 import Image from "next/image";
 import { HomeView, type HomeVisibility, defaultHomeVisibility } from "./home-view";
-import { DiaryView } from "./diary-view";
+import { DiaryView, type DemoDiaryMeal, type DemoMealSection } from "./diary-view";
 import { TrendsView } from "./trends-view";
 import { ProfileView } from "./profile-view";
 import { SettingsView, type SettingsPanelId } from "./settings-view";
@@ -22,12 +22,15 @@ const navigation = [
 ];
 
 const addActions = [
-  { label: "Add a meal", detail: "Search foods or build a meal", icon: Utensils, tone: "green" },
-  { label: "Scan a barcode", detail: "Quickly find a packaged food", icon: ScanLine, tone: "teal" },
-  { label: "Log activity", detail: "Record a workout or a walk", icon: Activity, tone: "amber" },
-  { label: "Log water", detail: "Add to today’s hydration", icon: Droplets, tone: "blue" },
-  { label: "Update weight", detail: "Keep your trend up to date", icon: Weight, tone: "coral" },
+  { id: "meal" as const, label: "Add a meal", detail: "Add a demo meal to today’s diary", icon: Utensils, tone: "green" },
+  { id: "barcode" as const, label: "Scan a barcode", detail: "Use a demo packaged-food match", icon: ScanLine, tone: "teal" },
+  { id: "activity" as const, label: "Log activity", detail: "Add a demo workout to today", icon: Activity, tone: "amber" },
+  { id: "water" as const, label: "Log water", detail: "Add one 250 ml glass", icon: Droplets, tone: "blue" },
+  { id: "weight" as const, label: "Update weight", detail: "Record a demo weight check-in", icon: Weight, tone: "coral" },
 ];
+
+type AddActionId = (typeof addActions)[number]["id"];
+type DemoActivity = { id: number; label: string; detail: string; kcal: number };
 
 function pageFromUrl(rawUrl: string): PageId | null {
   try {
@@ -51,6 +54,10 @@ export function AppShell() {
   const [toast, setToast] = useState("");
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanelId | null>(null);
   const [homeVisibility, setHomeVisibility] = useState<HomeVisibility>(defaultHomeVisibility);
+  const [waterMl, setWaterMl] = useState(1200);
+  const [weightKg, setWeightKg] = useState(87);
+  const [demoMeals, setDemoMeals] = useState<DemoDiaryMeal[]>([]);
+  const [demoActivities, setDemoActivities] = useState<DemoActivity[]>([]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -89,6 +96,71 @@ export function AppShell() {
     setPage("settings");
   };
 
+  const addDemoMeal = (section: DemoMealSection, source: "manual" | "barcode" = "manual") => {
+    const id = Date.now() + demoMeals.length;
+    const meal: DemoDiaryMeal = source === "barcode"
+      ? {
+          id,
+          section,
+          name: "Oat protein bar",
+          detail: "Demo barcode match · 1 bar",
+          kcal: 210,
+          image: "/images/apple.jpg",
+        }
+      : {
+          id,
+          section,
+          name: section === "Breakfast" ? "Overnight oats" : section === "Lunch" ? "Tofu grain bowl" : "Lentil pasta bowl",
+          detail: section === "Breakfast" ? "Oats, berries & chia" : section === "Lunch" ? "Brown rice, tofu & vegetables" : "Tomato, lentils & spinach",
+          kcal: section === "Breakfast" ? 412 : section === "Lunch" ? 520 : 486,
+          image: section === "Breakfast" ? "/images/bowl.jpg" : "/images/salmon.jpg",
+        };
+    setDemoMeals((current) => [...current, meal]);
+    setToast(`${source === "barcode" ? "Demo barcode item" : `Demo ${section.toLowerCase()}`} added · ${meal.kcal} kcal`);
+  };
+
+  const logDemoActivity = () => {
+    const next = demoActivities.length + 1;
+    setDemoActivities((current) => [...current, { id: Date.now(), label: `Demo cycling ${next}`, detail: "25 min", kcal: 165 }]);
+    setToast("Demo activity added · 25 min · 165 kcal");
+  };
+
+  const addWater = () => {
+    setWaterMl((current) => Math.min(current + 250, 3000));
+    setToast("250 ml water added");
+  };
+
+  const updateWeight = () => {
+    setWeightKg((current) => Number(Math.max(40, current - 0.2).toFixed(1)));
+    setToast("Demo weight check-in recorded");
+  };
+
+  const handleAddAction = (id: AddActionId) => {
+    setAddOpen(false);
+    if (id === "meal") {
+      addDemoMeal("Dinner");
+      setPage("diary");
+      return;
+    }
+    if (id === "barcode") {
+      addDemoMeal("Dinner", "barcode");
+      setPage("diary");
+      return;
+    }
+    if (id === "activity") {
+      logDemoActivity();
+      setPage("home");
+      return;
+    }
+    if (id === "water") {
+      addWater();
+      setPage("home");
+      return;
+    }
+    updateWeight();
+    setPage("home");
+  };
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -109,7 +181,6 @@ export function AppShell() {
           <div className="account-mini">
             <Image src="/images/avatar.jpg" alt="Alex Demo" width={42} height={42} />
             <div><strong>Alex Demo</strong><span>Demo profile</span></div>
-            <ChevronDown size={18} />
           </div>
         </div>
       </aside>
@@ -126,8 +197,17 @@ export function AppShell() {
         </header>
 
         <div className="page-content">
-          {page === "home" && <HomeView onAdd={() => setAddOpen(true)} visible={homeVisibility} />}
-          {page === "diary" && <DiaryView />}
+          {page === "home" && (
+            <HomeView
+              visible={homeVisibility}
+              waterMl={waterMl}
+              weightKg={weightKg}
+              extraActivities={demoActivities}
+              onLogActivity={logDemoActivity}
+              onAddWater={addWater}
+            />
+          )}
+          {page === "diary" && <DiaryView extraMeals={demoMeals} onAddMeal={(section) => addDemoMeal(section)} />}
           {page === "trends" && <TrendsView />}
           {page === "profile" && <ProfileView onToast={setToast} onOpenSettings={openSettings} />}
           {page === "settings" && <SettingsView dark={dark} initialPanel={settingsPanel} onSetDark={setDark} onToast={setToast} homeVisibility={homeVisibility} onHomeVisibilityChange={setHomeVisibility} />}
@@ -150,8 +230,8 @@ export function AppShell() {
             <div className="sheet-handle" />
             <div className="sheet-header"><div><span className="eyebrow">Saturday, September 5</span><h2 id="add-title">What would you like to log?</h2></div><button className="icon-button" aria-label="Close" onClick={() => setAddOpen(false)}><X size={20} /></button></div>
             <div className="add-grid">
-              {addActions.map(({ label, detail, icon: Icon, tone }) => (
-                <button key={label} className="add-action" onClick={() => { setAddOpen(false); setToast(`${label} selected — ready for backend wiring.`); }}>
+              {addActions.map(({ id, label, detail, icon: Icon, tone }) => (
+                <button key={id} className="add-action" onClick={() => handleAddAction(id)}>
                   <span className={`icon-badge ${tone}`}><Icon size={22} /></span><span><strong>{label}</strong><small>{detail}</small></span>
                 </button>
               ))}
