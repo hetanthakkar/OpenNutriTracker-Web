@@ -29,6 +29,21 @@ const addActions = [
   { label: "Update weight", detail: "Keep your trend up to date", icon: Weight, tone: "coral" },
 ];
 
+function pageFromUrl(rawUrl: string): PageId | null {
+  try {
+    const url = new URL(rawUrl, "https://opennutritracker.local");
+    const target = (url.searchParams.get("page") ?? url.searchParams.get("screen") ?? "").toLowerCase();
+    if (["home", "today", "main"].includes(target)) return "home";
+    if (target === "diary") return "diary";
+    if (target === "trends") return "trends";
+    if (["profile", "you"].includes(target)) return "profile";
+    if (["settings", "notifications"].includes(target)) return "settings";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function AppShell() {
   const [page, setPage] = useState<PageId>("home");
   const [dark, setDark] = useState(false);
@@ -46,6 +61,27 @@ export function AppShell() {
     const timer = window.setTimeout(() => setToast(""), 2600);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    const navigate = (rawUrl: string) => {
+      const target = pageFromUrl(rawUrl);
+      if (!target) return;
+      setSettingsPanel(target === "settings" ? null : settingsPanel);
+      setPage(target);
+    };
+
+    navigate(window.location.href);
+
+    const onNavigate = (event: Event) => {
+      const url = (event as CustomEvent<{ url?: string }>).detail?.url;
+      if (url) navigate(url);
+    };
+
+    window.addEventListener("ont:navigate", onNavigate as EventListener);
+    return () => window.removeEventListener("ont:navigate", onNavigate as EventListener);
+    // This listener intentionally owns only notification/launch navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const title = page === "home" ? "Good morning, Alex" : page === "settings" ? "Settings" : navigation.find((item) => item.id === page)?.label;
   const openSettings = (panel?: SettingsPanelId) => {
