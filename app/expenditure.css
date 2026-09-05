@@ -1,0 +1,252 @@
+.expenditure-card {
+  margin-bottom: 14px;
+  padding: 18px;
+}
+
+.expenditure-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.expenditure-head h2 {
+  margin: 3px 0 3px;
+  font-size: 21px;
+}
+
+.expenditure-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.expenditure-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.expenditure-confidence i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.expenditure-confidence.high {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.expenditure-confidence.high i {
+  background: var(--accent);
+}
+
+.expenditure-summary {
+  display: grid;
+  grid-template-columns: minmax(250px, .75fr) minmax(0, 1.25fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.expenditure-primary,
+.expenditure-mini-metrics {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.expenditure-primary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface-strong, var(--surface));
+}
+
+.expenditure-primary > div > span,
+.expenditure-metric span,
+.expenditure-chart-title span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.expenditure-primary strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.expenditure-primary strong small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.expenditure-primary em {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.expenditure-primary em.up {
+  color: var(--accent);
+}
+
+.expenditure-mini-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.expenditure-metric {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.expenditure-metric:last-child {
+  border-right: 0;
+}
+
+.expenditure-metric strong {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expenditure-chart-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.expenditure-chart-title strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+}
+
+.expenditure-chart-title strong small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.expenditure-chart-title > span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.expenditure-method {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.expenditure-method > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface-strong, var(--surface));
+}
+
+.expenditure-method svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.expenditure-method p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.expenditure-method strong {
+  color: var(--text);
+}
+
+.expenditure-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.expenditure-footnote svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+@media (max-width: 920px) {
+  .expenditure-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .expenditure-method {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .expenditure-card {
+    padding: 14px;
+  }
+
+  .expenditure-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .expenditure-mini-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .expenditure-metric,
+  .expenditure-metric:last-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .expenditure-metric:last-child {
+    border-bottom: 0;
+  }
+}
