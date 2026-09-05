@@ -1,4 +1,5 @@
-import type { DailyEnergyObservation, ExpenditureProfile } from "./expenditure";
+import { caloriePlanFromExpenditure } from "./calorie-plan";
+import { estimateAdaptiveExpenditure, type DailyEnergyObservation, type ExpenditureProfile } from "./expenditure";
 
 export const demoExpenditureProfile: ExpenditureProfile = {
   ageYears: 30,
@@ -8,6 +9,8 @@ export const demoExpenditureProfile: ExpenditureProfile = {
   bodyFatPercent: 25,
   activityFactor: 1.45,
 };
+
+export const demoWeeklyWeightGoalKg = -0.4;
 
 /**
  * Deterministic prototype data until nutrition, measurements and HealthKit
@@ -42,4 +45,20 @@ export function createDemoExpenditureObservations(includeHealthActivity: boolean
   }
 
   return rows;
+}
+
+export function getDemoAdaptivePlan(includeHealthActivity = false) {
+  const estimate = estimateAdaptiveExpenditure(
+    createDemoExpenditureObservations(includeHealthActivity),
+    demoExpenditureProfile,
+  );
+  const latestWeightKg = estimate.history.at(-1)?.trendWeightKg ?? demoExpenditureProfile.weightKg;
+  const caloriePlan = caloriePlanFromExpenditure({
+    expenditureKcal: estimate.currentTdeeKcal,
+    weeklyWeightChangeKg: demoWeeklyWeightGoalKg,
+    currentWeightKg: latestWeightKg,
+    bodyFatPercent: demoExpenditureProfile.bodyFatPercent,
+  });
+
+  return { estimate, caloriePlan, latestWeightKg };
 }
