@@ -28,13 +28,45 @@ export const homeCustomizeOptions: Array<{ id: HomeSection; title: string; detai
 ];
 
 export function HomeView({ onAdd, visible }: { onAdd: () => void; visible: HomeVisibility }) {
+  const quickStatsStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 12,
+    width: "100%",
+  };
+
+  const quickStatButtonStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    alignItems: "center",
+    columnGap: 12,
+    width: "100%",
+    minWidth: 0,
+    textAlign: "left",
+  };
+
+  const quickStatCopyStyle: React.CSSProperties = {
+    display: "grid",
+    gap: 2,
+    minWidth: 0,
+    justifyItems: "start",
+  };
+
   return (
     <div className="home-page">
       <div className="home-layout">
       <div className="home-main">
-        {visible.quickStats && <div className="quick-stats">
-          <button><Scale size={17} /> <span><strong>87 kg</strong><small>Latest weight</small></span><ChevronRight size={16} /></button>
-          <button><Droplets size={17} /> <span><strong>1,200 ml</strong><small>of 1,900 ml</small></span><Plus size={16} /></button>
+        {visible.quickStats && <div className="quick-stats" style={quickStatsStyle}>
+          <button style={quickStatButtonStyle}>
+            <Scale size={17} />
+            <span style={quickStatCopyStyle}><strong>87 kg</strong><small>Latest weight</small></span>
+            <ChevronRight size={16} />
+          </button>
+          <button style={quickStatButtonStyle}>
+            <Droplets size={17} />
+            <span style={quickStatCopyStyle}><strong>1,200 ml</strong><small>of 1,900 ml</small></span>
+            <Plus size={16} />
+          </button>
         </div>}
 
         {visible.energy && <Card className="energy-card">
