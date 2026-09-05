@@ -5,14 +5,14 @@ const PADDLE_WORKER_ESM =
   "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/dist/assets/worker-entry-C9UNuyOJ.js";
 const ORT_WASM_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
 
-// PaddleOCR's default model host can be extremely slow outside China.
-// These are mirrors of the official PP-OCRv6 tiny archives.
+// PP-OCRv6 Small is more accurate than Tiny, especially for dense/small text.
+// These are unmodified mirrors of the official PaddleOCR ONNX inference archives.
 const DET_MODEL_URL =
-  "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_tiny_det_onnx_infer.tar";
+  "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_small_det_onnx_infer.tar";
 const REC_MODEL_URL =
-  "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_tiny_rec_onnx_infer.tar";
+  "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_small_rec_onnx_infer.tar";
 
-const INIT_TIMEOUT_MS = 45_000;
+const INIT_TIMEOUT_MS = 90_000;
 
 type PaddleResultItem = {
   text?: unknown;
@@ -54,8 +54,7 @@ function importFromUrl(url: string): Promise<PaddleModule> {
 
 function createPaddleWorker(): Worker {
   // A Worker cannot be constructed directly from a cross-origin CDN URL.
-  // Build a same-origin blob worker, then import PaddleOCR's worker module
-  // from jsDelivr inside it. jsDelivr serves the module with CORS enabled.
+  // Build a blob worker, then import PaddleOCR's worker module inside it.
   if (!workerBootstrapUrl) {
     const source = `import ${JSON.stringify(PADDLE_WORKER_ESM)};`;
     workerBootstrapUrl = URL.createObjectURL(
@@ -105,13 +104,12 @@ async function getOcr(): Promise<PaddleInstance> {
         const { PaddleOCR } = await importFromUrl(PADDLE_OCR_ESM);
         return PaddleOCR.create({
           lang: "en",
-          textDetectionModelName: "PP-OCRv6_tiny_det",
+          textDetectionModelName: "PP-OCRv6_small_det",
           textDetectionModelAsset: { url: DET_MODEL_URL },
-          textRecognitionModelName: "PP-OCRv6_tiny_rec",
+          textRecognitionModelName: "PP-OCRv6_small_rec",
           textRecognitionModelAsset: { url: REC_MODEL_URL },
 
-          // Keep OpenCV + ONNX inference off the UI thread. The custom
-          // factory avoids the browser's cross-origin Worker restriction.
+          // Keep OpenCV + ONNX inference off the UI thread.
           worker: {
             createWorker: createPaddleWorker,
           },
@@ -125,7 +123,7 @@ async function getOcr(): Promise<PaddleInstance> {
         });
       })(),
       INIT_TIMEOUT_MS,
-      "PaddleOCR initialization timed out after 45 seconds. Check the browser Network and Console tabs for a blocked worker, model, or WASM request.",
+      "PaddleOCR initialization timed out after 90 seconds. Check the browser Network and Console tabs for a blocked worker, model, or WASM request.",
     ).catch((error) => {
       ocrPromise = null;
       throw error;
@@ -138,7 +136,7 @@ async function getOcr(): Promise<PaddleInstance> {
 export async function recognizeNutritionLabel(image: Blob): Promise<BrowserOcrResult> {
   const ocr = await getOcr();
   const [result] = await ocr.predict(image, {
-    textDetLimitSideLen: 960,
+    textDetLimitSideLen: 1280,
     textDetBoxThresh: 0.45,
     textRecScoreThresh: 0.35,
   });
