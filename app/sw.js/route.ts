@@ -20,6 +20,14 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
+// Keep the service worker functional for installability, but deliberately do
+// not cache the Next.js shell. Navigations always come from the network, so a
+// deploy cannot leave an old HTML shell pinned behind a stale cache.
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET" || event.request.mode !== "navigate") return;
+  event.respondWith(fetch(event.request));
+});
+
 function base64UrlToUint8Array(value) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
