@@ -1,0 +1,49 @@
+html[data-pwa-standalone="true"],
+html[data-pwa-standalone="true"] body {
+  overscroll-behavior: none;
+}
+
+@media (max-width: 760px) {
+  html[data-pwa-standalone="true"] body {
+    overflow: hidden;
+  }
+
+  html[data-pwa-standalone="true"] .app-shell {
+    height: max(var(--app-height, 0px), 100dvh);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  html[data-pwa-standalone="true"] .app-shell > main {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html[data-pwa-standalone="true"] .topbar {
+    top: 0;
+    padding-top: max(17px, env(safe-area-inset-top));
+  }
+
+  html[data-pwa-standalone="true"] .page-content {
+    padding-bottom: 24px;
+  }
+
+  /* In the installed app the tab bar is its own non-scrolling flex row, like
+     Paired. It cannot drift with iOS rubber-banding and content always settles
+     above it instead of underneath a fixed overlay. */
+  html[data-pwa-standalone="true"] .mobile-nav {
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+    min-height: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: max(5px, env(safe-area-inset-bottom));
+  }
+}
