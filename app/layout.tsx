@@ -3,6 +3,7 @@ import { PwaRuntime } from "@/components/pwa-runtime";
 import "./globals.css";
 import "./settings-layout-fix.css";
 import "./pwa.css";
+import "./redesign.css";
 
 export const metadata: Metadata = {
   title: "OpenNutriTracker",
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#f7f4ef",
+  themeColor: "#f6f7f8",
 };
 
 const pwaBootstrap = `
