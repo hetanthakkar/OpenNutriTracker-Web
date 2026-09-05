@@ -1,7 +1,16 @@
 import type { OcrItem, OcrPoint } from "./nutrition-parser";
 
 const PADDLE_OCR_ESM = "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm";
-const ORT_WASM_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/";
+const ORT_WASM_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
+
+// PaddleOCR's default model host can be extremely slow outside China.
+// These are byte-for-byte mirrors of the official PP-OCRv6 tiny archives.
+const DET_MODEL_URL =
+  "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_tiny_det_onnx_infer.tar";
+const REC_MODEL_URL =
+  "https://huggingface.co/LunarOilRig/paddleocr-onnx/resolve/main/PP-OCRv6_tiny_rec_onnx_infer.tar";
+
+const INIT_TIMEOUT_MS = 45_000;
 
 type PaddleResultItem = {
   text?: unknown;
@@ -40,6 +49,22 @@ function importFromUrl(url: string): Promise<PaddleModule> {
   return importer(url);
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 function normalizePoly(value: unknown): OcrPoint[] {
   if (!Array.isArray(value)) return [];
 
@@ -55,19 +80,26 @@ function normalizePoly(value: unknown): OcrPoint[] {
 
 async function getOcr(): Promise<PaddleInstance> {
   if (!ocrPromise) {
-    ocrPromise = (async () => {
-      const { PaddleOCR } = await importFromUrl(PADDLE_OCR_ESM);
-      return PaddleOCR.create({
-        lang: "en",
-        ocrVersion: "PP-OCRv6",
-        ortOptions: {
-          backend: "wasm",
-          wasmPaths: ORT_WASM_PATH,
-          numThreads: 1,
-          simd: true,
-        },
-      });
-    })().catch((error) => {
+    ocrPromise = withTimeout(
+      (async () => {
+        const { PaddleOCR } = await importFromUrl(PADDLE_OCR_ESM);
+        return PaddleOCR.create({
+          lang: "en",
+          textDetectionModelName: "PP-OCRv6_tiny_det",
+          textDetectionModelAsset: { url: DET_MODEL_URL },
+          textRecognitionModelName: "PP-OCRv6_tiny_rec",
+          textRecognitionModelAsset: { url: REC_MODEL_URL },
+          ortOptions: {
+            backend: "wasm",
+            wasmPaths: ORT_WASM_PATH,
+            numThreads: 1,
+            simd: true,
+          },
+        });
+      })(),
+      INIT_TIMEOUT_MS,
+      "PaddleOCR initialization timed out after 45 seconds. Check the browser Network tab for a blocked model or WASM request.",
+    ).catch((error) => {
       ocrPromise = null;
       throw error;
     });
