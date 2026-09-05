@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  Activity, BarChart3, BookOpen, ChevronDown, Home, Moon, Plus, Settings,
+  Activity, BarChart3, BookOpen, Camera, ChevronDown, Home, Moon, Plus, Settings,
   Sun, UserRound, Utensils, Weight, X, Droplets, ScanLine,
 } from "lucide-react";
 import Image from "next/image";
@@ -11,6 +11,7 @@ import { DiaryView } from "./diary-view";
 import { TrendsView } from "./trends-view";
 import { ProfileView } from "./profile-view";
 import { SettingsView, type SettingsPanelId } from "./settings-view";
+import { NutritionLabelScanner } from "./nutrition-label-scanner";
 
 export type PageId = "home" | "diary" | "trends" | "profile" | "settings";
 
@@ -22,17 +23,19 @@ const navigation = [
 ];
 
 const addActions = [
-  { label: "Add a meal", detail: "Search foods or build a meal", icon: Utensils, tone: "green" },
-  { label: "Scan a barcode", detail: "Quickly find a packaged food", icon: ScanLine, tone: "teal" },
-  { label: "Log activity", detail: "Record a workout or a walk", icon: Activity, tone: "amber" },
-  { label: "Log water", detail: "Add to today’s hydration", icon: Droplets, tone: "blue" },
-  { label: "Update weight", detail: "Keep your trend up to date", icon: Weight, tone: "coral" },
+  { id: "meal", label: "Add a meal", detail: "Search foods or build a meal", icon: Utensils, tone: "green" },
+  { id: "nutrition-label", label: "Scan nutrition label", detail: "Read Nutrition Facts with on-device OCR", icon: Camera, tone: "green" },
+  { id: "barcode", label: "Scan a barcode", detail: "Quickly find a packaged food", icon: ScanLine, tone: "teal" },
+  { id: "activity", label: "Log activity", detail: "Record a workout or a walk", icon: Activity, tone: "amber" },
+  { id: "water", label: "Log water", detail: "Add to today’s hydration", icon: Droplets, tone: "blue" },
+  { id: "weight", label: "Update weight", detail: "Keep your trend up to date", icon: Weight, tone: "coral" },
 ];
 
 export function AppShell() {
   const [page, setPage] = useState<PageId>("home");
   const [dark, setDark] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [nutritionScannerOpen, setNutritionScannerOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanelId | null>(null);
   const [homeVisibility, setHomeVisibility] = useState<HomeVisibility>(defaultHomeVisibility);
@@ -51,6 +54,15 @@ export function AppShell() {
   const openSettings = (panel?: SettingsPanelId) => {
     setSettingsPanel(panel ?? null);
     setPage("settings");
+  };
+
+  const handleAddAction = (id: string, label: string) => {
+    setAddOpen(false);
+    if (id === "nutrition-label") {
+      setNutritionScannerOpen(true);
+      return;
+    }
+    setToast(`${label} selected — ready for backend wiring.`);
   };
 
   return (
@@ -120,8 +132,8 @@ export function AppShell() {
             <div className="sheet-handle" />
             <div className="sheet-header"><div><span className="eyebrow">Saturday, September 5</span><h2 id="add-title">What would you like to log?</h2></div><button className="icon-button" aria-label="Close" onClick={() => setAddOpen(false)}><X size={20} /></button></div>
             <div className="add-grid">
-              {addActions.map(({ label, detail, icon: Icon, tone }) => (
-                <button key={label} className="add-action" onClick={() => { setAddOpen(false); setToast(`${label} selected — ready for backend wiring.`); }}>
+              {addActions.map(({ id, label, detail, icon: Icon, tone }) => (
+                <button key={id} className="add-action" onClick={() => handleAddAction(id, label)}>
                   <span className={`icon-badge ${tone}`}><Icon size={22} /></span><span><strong>{label}</strong><small>{detail}</small></span>
                 </button>
               ))}
@@ -129,6 +141,8 @@ export function AppShell() {
           </section>
         </div>
       )}
+
+      {nutritionScannerOpen && <NutritionLabelScanner onClose={() => setNutritionScannerOpen(false)} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );
