@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  Activity, BarChart3, BookOpen, ChevronDown, Home, Moon, Plus, Settings,
-  Sun, UserRound, Utensils, Weight, X, Droplets, ScanLine,
+  Activity, BarChart3, BookOpen, ChevronDown, Home, Plus, Settings,
+  UserRound, Utensils, Weight, X, Droplets, ScanLine,
 } from "lucide-react";
 import Image from "next/image";
 import { HomeView, type HomeVisibility, defaultHomeVisibility } from "./home-view";
@@ -70,9 +70,6 @@ export function AppShell() {
         </nav>
         <div className="sidebar-bottom">
           <button className={page === "settings" ? "active" : ""} onClick={() => openSettings()}><Settings size={21} /><span>Settings</span></button>
-          <button onClick={() => setDark((value) => !value)}>
-            {dark ? <Sun size={21} /> : <Moon size={21} />}<span>{dark ? "Light mode" : "Dark mode"}</span>
-          </button>
           <div className="account-mini">
             <Image src="/images/avatar.jpg" alt="Alex Demo" width={42} height={42} />
             <div><strong>Alex Demo</strong><span>Demo profile</span></div>
@@ -88,9 +85,6 @@ export function AppShell() {
             <h1>{title}</h1>
           </div>
           <div className="topbar-actions">
-            <button className="icon-button desktop-theme" aria-label="Toggle color theme" onClick={() => setDark((value) => !value)}>
-              {dark ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
             <button className="primary-button" onClick={() => setAddOpen(true)}><Plus size={20} /> Add entry</button>
           </div>
         </header>
