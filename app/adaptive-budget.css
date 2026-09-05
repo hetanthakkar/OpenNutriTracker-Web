@@ -1,0 +1,8 @@
+.on-track.over-target {
+  background: color-mix(in srgb, #c25f32 12%, transparent);
+  color: #b9572e;
+}
+
+.on-track.over-target > span {
+  background: #c25f32;
+}
