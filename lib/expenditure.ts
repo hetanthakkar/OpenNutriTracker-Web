@@ -32,10 +32,17 @@ export type ExpenditureDay = {
 export type ExpenditureEstimate = {
   currentTdeeKcal: number;
   priorTdeeKcal: number;
+  isAdaptive: boolean;
   confidence: number;
+  status: "building" | "active" | "paused";
+  pauseReason: "missing_intake" | "stale_weight" | "insufficient_evidence" | null;
   loggedIntakeDays: number;
   weighedDays: number;
   totalDays: number;
+  recentLoggedIntakeDays: number;
+  recentWeighedDays: number;
+  requiredLoggedIntakeDays: number;
+  requiredWeighedDays: number;
   history: ExpenditureDay[];
 };
 
@@ -44,6 +51,12 @@ const FAT_ENERGY_MJ_PER_KG = 39.5;
 const LEAN_CHANGE_ENERGY_MJ_PER_KG = 7.6;
 const DEFAULT_ENERGY_DENSITY_KCAL_PER_KG = 7000;
 const FORBES_KG = 10.4;
+const EVIDENCE_WINDOW_DAYS = 20;
+const MIN_HISTORY_DAYS = 14;
+const MIN_LOGGED_INTAKE_DAYS = 10;
+const MIN_WEIGHED_DAYS = 6;
+const MAX_WEIGHT_AGE_DAYS = 3;
+const WEIGHT_TREND_ALPHA = 0.1;
 
 /**
  * Mifflin-St Jeor resting energy expenditure.
@@ -102,8 +115,8 @@ export function energyDensityForWeightChangeKcalPerKg(fatMassKg?: number): numbe
  *   stored/released energy.
  *
  * Engineering choices (deliberately isolated here):
- * - robust constant-velocity Kalman filter for scale-weight noise
- * - up to 14 completed intake days per evidence window
+ * - causal exponential weight smoothing, held steady without measurements
+ * - up to 20 completed intake days per evidence window
  * - median imputation for missing intake, with reduced confidence
  * - Apple Health steps alter update responsiveness only; they are never
  *   converted into calories.
@@ -112,19 +125,24 @@ export function estimateAdaptiveExpenditure(
   observations: DailyEnergyObservation[],
   profile: ExpenditureProfile,
 ): ExpenditureEstimate {
-  const rows = [...observations]
-    .filter((row) => row.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const rows = dailyObservations(observations);
 
   const prior = clamp(initialTdee(profile), 1200, 5000);
   if (rows.length === 0) {
     return {
       currentTdeeKcal: Math.round(prior),
       priorTdeeKcal: Math.round(prior),
+      isAdaptive: false,
       confidence: 0,
+      status: "building",
+      pauseReason: null,
       loggedIntakeDays: 0,
       weighedDays: 0,
       totalDays: 0,
+      recentLoggedIntakeDays: 0,
+      recentWeighedDays: 0,
+      requiredLoggedIntakeDays: MIN_LOGGED_INTAKE_DAYS,
+      requiredWeighedDays: MIN_WEIGHED_DAYS,
       history: [],
     };
   }
@@ -134,12 +152,20 @@ export function estimateAdaptiveExpenditure(
   const observedIntakes: number[] = [];
   const fatMassHistory: Array<number | undefined> = [];
   let estimate = prior;
+  let latestConfidence = 0;
+  let hasAdapted = false;
+  let pauseReason: ExpenditureEstimate["pauseReason"] = null;
+  let completedLoggedDays = 0;
+  let lastWeightIndex = -1;
+  const firstWeightIndex = rows.findIndex((row) => finitePositive(row.weightKg) != null);
   let fatMassKg = profile.bodyFatPercent != null
     ? profile.weightKg * clamp(profile.bodyFatPercent / 100, 0.03, 0.7)
     : undefined;
 
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i];
+    if (i > 0 && finitePositive(rows[i - 1].caloriesKcal) != null) completedLoggedDays += 1;
+    if (finitePositive(row.weightKg) != null) lastWeightIndex = i;
     const calories = finitePositive(row.caloriesKcal);
     if (calories != null) observedIntakes.push(calories);
 
@@ -158,7 +184,7 @@ export function estimateAdaptiveExpenditure(
 
     // Weight change from windowStart morning -> i morning is paired with intake
     // from windowStart -> i-1. That gives the same number of energy intervals.
-    const windowStart = Math.max(0, i - 14);
+    const windowStart = Math.max(0, firstWeightIndex, i - EVIDENCE_WINDOW_DAYS);
     const intervalDays = i - windowStart;
     const intakeRows = rows.slice(windowStart, i);
     const weightRows = rows.slice(windowStart, i + 1);
@@ -166,12 +192,19 @@ export function estimateAdaptiveExpenditure(
     const windowWeights = weightRows.filter((item) => finitePositive(item.weightKg) != null).length;
     const intakeCoverage = intervalDays > 0 ? windowLogged / intervalDays : 0;
     const weightCoverage = weightRows.length > 0 ? windowWeights / weightRows.length : 0;
+    const recentNutrition = rows.slice(Math.max(0, i - 7), i);
+    const missingNutritionDays = recentNutrition.filter((item) => finitePositive(item.caloriesKcal) == null).length;
+    const weightAge = lastWeightIndex < 0 ? Infinity : i - lastWeightIndex;
+    const reliable = firstWeightIndex >= 0 && hasReliableEvidence(intervalDays, windowLogged, windowWeights);
+    pauseReason = missingNutritionDays > 3 ? "missing_intake"
+      : weightAge > MAX_WEIGHT_AGE_DAYS ? "stale_weight"
+      : !reliable ? "insufficient_evidence" : null;
 
     let observedTdee: number | null = null;
     let confidence = 0;
     let stepResponseMultiplier = 1;
 
-    if (intervalDays >= 7 && windowLogged >= 4 && windowWeights >= 3) {
+    if (pauseReason === null) {
       let intakeTotal = 0;
       for (let j = windowStart; j < i; j += 1) {
         const logged = finitePositive(rows[j].caloriesKcal);
@@ -200,17 +233,19 @@ export function estimateAdaptiveExpenditure(
 
       observedTdee = clamp((intakeTotal - bodyEnergyChange) / intervalDays, 1200, 5000);
 
-      const maturity = clamp((i - 6) / 21, 0.15, 1);
+      const maturity = clamp((completedLoggedDays - (MIN_LOGGED_INTAKE_DAYS - 1)) / 21, 0.2, 1);
       confidence = clamp(
-        maturity * (0.62 * intakeCoverage + 0.38 * weightCoverage),
+        maturity * (0.62 * intakeCoverage + 0.38 * weightCoverage) * Math.pow(0.8, weightAge),
         0,
         0.98,
       );
+      latestConfidence = confidence;
+      hasAdapted = true;
 
       // Use the most recently completed activity day. Steps alter only the
       // update rate, not the expenditure observation itself.
       stepResponseMultiplier = activityResponseMultiplier(rows, i - 1, windowStart);
-      const baseAlpha = 0.06 + 0.16 * confidence;
+      const baseAlpha = completedLoggedDays < 21 ? 0.2 : 0.1;
       const alpha = clamp(baseAlpha * stepResponseMultiplier, 0.05, 0.32);
       const requestedChange = (observedTdee - estimate) * alpha;
       const maxDailyChange = 120 * stepResponseMultiplier;
@@ -219,6 +254,9 @@ export function estimateAdaptiveExpenditure(
         1200,
         5000,
       );
+    } else {
+      // A held estimate is still useful, but its old evidence is becoming stale.
+      latestConfidence *= 0.8;
     }
 
     history.push({
@@ -228,21 +266,45 @@ export function estimateAdaptiveExpenditure(
       intakeImputed,
       observedTdeeKcal: observedTdee == null ? null : Math.round(observedTdee),
       estimatedTdeeKcal: Math.round(estimate),
-      confidence,
+      confidence: latestConfidence,
       energyDensityKcalPerKg: Math.round(energyDensity),
       stepResponseMultiplier,
     });
   }
 
   const last = history.at(-1)!;
+  const recentEvidence = recentEvidenceCounts(rows);
   return {
     currentTdeeKcal: last.estimatedTdeeKcal,
     priorTdeeKcal: Math.round(prior),
+    isAdaptive: hasAdapted,
+    status: !hasAdapted ? "building" : pauseReason === null ? "active" : "paused",
+    pauseReason: hasAdapted ? pauseReason : null,
     confidence: last.confidence,
     loggedIntakeDays: rows.filter((row) => finitePositive(row.caloriesKcal) != null).length,
     weighedDays: rows.filter((row) => finitePositive(row.weightKg) != null).length,
     totalDays: rows.length,
+    recentLoggedIntakeDays: recentEvidence.loggedIntakeDays,
+    recentWeighedDays: recentEvidence.weighedDays,
+    requiredLoggedIntakeDays: Math.max(MIN_LOGGED_INTAKE_DAYS, Math.ceil(Math.min(EVIDENCE_WINDOW_DAYS, rows.length - 1) * 0.7)),
+    requiredWeighedDays: MIN_WEIGHED_DAYS,
     history,
+  };
+}
+
+function hasReliableEvidence(intervalDays: number, loggedIntakeDays: number, weighedDays: number) {
+  return intervalDays >= MIN_HISTORY_DAYS
+    && loggedIntakeDays >= Math.max(MIN_LOGGED_INTAKE_DAYS, Math.ceil(intervalDays * 0.7))
+    && weighedDays >= MIN_WEIGHED_DAYS;
+}
+
+/** Count the most recent completed tracking window; today's partial log is excluded. */
+function recentEvidenceCounts(rows: DailyEnergyObservation[]) {
+  const completedRows = rows.slice(0, -1);
+  const window = completedRows.slice(-EVIDENCE_WINDOW_DAYS);
+  return {
+    loggedIntakeDays: window.filter((row) => finitePositive(row.caloriesKcal) != null).length,
+    weighedDays: rows.slice(-(EVIDENCE_WINDOW_DAYS + 1)).filter((row) => finitePositive(row.weightKg) != null).length,
   };
 }
 
@@ -266,48 +328,46 @@ function activityResponseMultiplier(
   return clamp(1 + Math.max(0, deviation - 0.15) * 0.8, 1, 1.35);
 }
 
-function robustWeightTrend(rows: DailyEnergyObservation[], fallbackWeightKg: number): number[] {
-  let xWeight = finitePositive(rows[0]?.weightKg) ?? fallbackWeightKg;
-  let xVelocity = 0;
-  let p00 = 0.5;
-  let p01 = 0;
-  let p10 = 0;
-  let p11 = 0.05;
+export function robustWeightTrend(rows: DailyEnergyObservation[], fallbackWeightKg: number): number[] {
+  let trend = fallbackWeightKg;
+  let lastMeasuredIndex: number | null = null;
   const result: number[] = [];
 
-  for (const row of rows) {
-    xWeight += xVelocity;
-    const pp00 = p00 + p01 + p10 + p11 + 0.015;
-    const pp01 = p01 + p11;
-    const pp10 = p10 + p11;
-    const pp11 = p11 + 0.0025;
-    p00 = pp00;
-    p01 = pp01;
-    p10 = pp10;
-    p11 = pp11;
-
-    const measurement = finitePositive(row.weightKg);
+  for (let i = 0; i < rows.length; i += 1) {
+    const measurement = finitePositive(rows[i].weightKg);
     if (measurement != null) {
-      const innovation = clamp(measurement - xWeight, -1.5, 1.5);
-      const measurementVariance = 0.16;
-      const s = p00 + measurementVariance;
-      const k0 = p00 / s;
-      const k1 = p10 / s;
-      xWeight += k0 * innovation;
-      xVelocity += k1 * innovation;
-
-      const oldP00 = p00;
-      const oldP01 = p01;
-      p00 = (1 - k0) * oldP00;
-      p01 = (1 - k0) * oldP01;
-      p10 = p10 - k1 * oldP00;
-      p11 = p11 - k1 * oldP01;
+      // Account for short gaps without inventing a continuing weight velocity.
+      const alpha = lastMeasuredIndex === null ? 1
+        : 1 - Math.pow(1 - WEIGHT_TREND_ALPHA, Math.min(i - lastMeasuredIndex, MAX_WEIGHT_AGE_DAYS));
+      trend += alpha * (measurement - trend);
+      lastMeasuredIndex = i;
     }
-
-    result.push(xWeight);
+    result.push(trend);
   }
 
   return result;
+}
+
+/** Normalize calendar gaps and discard empty history before tracking began. */
+function dailyObservations(observations: DailyEnergyObservation[]): DailyEnergyObservation[] {
+  const byDate = new Map(observations.filter((row) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(row.date)) return false;
+    const time = Date.parse(`${row.date}T00:00:00Z`);
+    return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === row.date;
+  }).map((row) => [row.date, row]));
+  const dates = [...byDate.keys()].sort();
+  const first = dates.find((date) => {
+    const row = byDate.get(date)!;
+    return finitePositive(row.caloriesKcal) != null || finitePositive(row.weightKg) != null;
+  });
+  if (!first) return [];
+  const end = Date.parse(`${dates.at(-1)}T00:00:00Z`);
+  const rows: DailyEnergyObservation[] = [];
+  for (let time = Date.parse(`${first}T00:00:00Z`); time <= end; time += 86_400_000) {
+    const date = new Date(time).toISOString().slice(0, 10);
+    rows.push(byDate.get(date) ?? { date });
+  }
+  return rows;
 }
 
 function finitePositive(value: number | null | undefined): number | null {

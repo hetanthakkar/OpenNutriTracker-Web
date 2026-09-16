@@ -1,0 +1,96 @@
+/* Live label capture: fixed camera above an independently scrollable facts sheet. */
+.food-picker-sheet.nutrition-label-sheet { padding: 10px 0 0; }
+.nutrition-label-sheet:has(.nutrition-label-live-layout) { background: var(--surface); color: var(--text); }
+.nutrition-label-sheet:has(.nutrition-label-live-layout) > .food-picker-head .eyebrow { color: var(--muted); }
+.nutrition-label-sheet:has(.nutrition-label-live-layout) > .food-picker-head .icon-button { color: var(--text); }
+.nutrition-label-sheet:has(.nutrition-label-live-layout) > .sheet-handle { background: var(--border); }
+.nutrition-label-sheet > .food-picker-head { padding: 0 20px 12px; }
+.nutrition-label-sheet > .sheet-handle { flex-shrink: 0; }
+.nutrition-label-sheet .nutrition-label-scan { margin: 0; border: 0; border-radius: 0; }
+.nutrition-label-live-layout { padding: 0; background: var(--canvas); color: var(--text); }
+.nutrition-label-live-layout .nutrition-label-scan-head { padding: 9px 16px; background: var(--surface); font-size: 13px; }
+.nutrition-label-live-layout .nutrition-label-scan-head .icon-button { color: var(--text); }
+.nutrition-label-sheet .nutrition-label-live-layout .nutrition-label-scan-head { display: none; }
+.nutrition-label-live-layout .nutrition-label-capture { display: flex; flex-direction: column; overflow: hidden; padding: 0; scrollbar-gutter: auto; }
+.scan-camera-stage { position: relative; flex: 0 0 clamp(220px, 33dvh, 330px); overflow: hidden; background: var(--canvas); isolation: isolate; }
+.scan-camera-stage > video { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
+.scan-camera-stage > img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.scan-camera-stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(#0005, transparent 30%, transparent 50%, #000b); pointer-events: none; z-index: 1; }
+.scan-camera-empty { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 9px; padding: 52px 16px 80px; color: var(--text); background: radial-gradient(ellipse at center, var(--surface-muted), var(--canvas) 80%); font-size: 14px; }
+.scan-camera-empty small { font-size: 11px; color: var(--muted); }
+.scan-camera-topbar { position: absolute; top: 12px; right: 12px; left: 12px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.scan-mode-switch { display: flex; align-items: center; padding: 3px; border-radius: 30px; background: color-mix(in srgb, var(--text), transparent 18%); }
+.scan-mode-switch button, .scan-mode-switch > span { min-height: 38px; display: flex; align-items: center; padding: 0 17px; border: 0; border-radius: 24px; color: var(--surface); background: transparent; font-size: 13px; font-weight: 750; }
+.scan-mode-switch button[aria-pressed="true"], .scan-mode-switch > span { background: var(--accent); color: #fff; }
+.scan-camera-tools { display: flex; gap: 6px; }
+.scan-camera-tool { position: relative; width: 40px; height: 40px; display: grid; place-items: center; background: color-mix(in srgb, var(--text), transparent 18%); border-radius: 50%; color: var(--surface); cursor: pointer; overflow: hidden; }
+.scan-file-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.scan-camera-tool:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scan-camera-bottom { position: absolute; z-index: 2; bottom: 22px; left: 16px; right: 16px; }
+.scan-camera-controls { display: flex; align-items: center; gap: 6px; }
+.scan-camera-controls button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 28px; padding: 0 14px; font-size: 13px; font-weight: 750; }
+.scan-camera-start { background: var(--accent); color: #fff; }
+.scan-camera-pause { background: var(--surface); color: var(--accent); }
+.scan-camera-controls .scan-camera-done { margin-left: auto; padding: 0 17px; background: var(--accent); color: #fff; font-size: 16px; }
+.scan-camera-controls button:disabled { opacity: .45; cursor: default; }
+.scan-camera-status { display: flex; align-items: center; gap: 7px; min-height: 28px; margin: 8px 0 0; color: var(--surface); font-size: 11px; line-height: 1.4; text-shadow: 0 1px 3px #000; }
+.scan-camera-status > svg, .scan-status-dot { flex: 0 0 auto; }
+.scan-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.scan-status-dot.active { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent), transparent 75%); }
+.scan-facts { position: relative; z-index: 3; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin-top: -16px; padding: 9px 20px max(20px, env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; background: var(--surface); color: var(--text); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.scan-facts-grip { width: 35px; height: 4px; border-radius: 4px; margin: 0 auto 13px; background: var(--border); }
+.scan-facts-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.scan-facts-heading h3 { margin: 0; font-size: 20px; font-weight: 850; letter-spacing: -.5px; }
+.scan-facts-heading > span { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.scan-food-identity { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 10px; margin: 0 0 10px; }
+.scan-food-identity label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 800; }
+.scan-food-identity label em { color: var(--muted); font-size: 9px; font-style: normal; font-weight: 550; }
+.scan-facts .scan-food-identity input { width: 100%; min-width: 0; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); color: var(--text); padding: 0 9px; font-size: 13px; }
+.scan-facts .scan-food-identity input:focus { border-color: var(--accent); background: var(--accent-soft); }
+.scan-facts .scan-food-identity input:disabled { opacity: .65; }
+.scan-facts-serving { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 750; }
+.scan-facts-serving > div { display: flex; justify-content: flex-end; gap: 3px; min-width: 0; }
+.scan-facts input, .scan-facts select { min-width: 0; height: 42px; padding: 5px 4px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text); font: inherit; font-size: 16px; outline: none; }
+.scan-facts input:focus, .scan-facts select:focus { border-color: var(--accent); background: var(--accent-soft); }
+.scan-facts input::placeholder { color: var(--muted); opacity: 1; }
+.scan-facts input[aria-invalid="true"] { border-color: var(--fat); color: var(--fat); }
+.scan-facts input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.scan-facts input::-webkit-inner-spin-button, .scan-facts input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.scan-facts-serving input { text-align: right; width: 85px; }
+.scan-facts-serving input:first-child { width: 54px; }
+.scan-serving-details { margin-bottom: 10px; color: var(--muted); font-size: 11px; }
+.scan-serving-details summary { padding: 7px 0; cursor: pointer; min-height: 30px; }
+.scan-serving-details > div { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 0; }
+.scan-serving-details label { display: grid; gap: 4px; font-size: 12px; }
+.scan-serving-details input, .scan-serving-details select { width: 100%; background: var(--canvas); border-color: var(--border); }
+.scan-serving-basis { grid-column: 1 / -1; }
+.scan-facts-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 47px; border-bottom: 1px solid var(--border); }
+.scan-facts-row > span { font-size: 14px; font-weight: 750; }
+.scan-facts-row.child > span { padding-left: 22px; font-weight: 450; }
+.scan-facts-row.minor > span { font-weight: 450; }
+.scan-facts-row.calories { border-top: 8px solid var(--accent); border-bottom: 6px solid var(--accent); min-height: 65px; margin-bottom: 2px; }
+.scan-facts-row.calories > span { font-size: 26px; font-weight: 800; letter-spacing: -.4px; }
+.scan-facts-value { display: flex; align-items: center; flex: 0 0 auto; gap: 3px; }
+.scan-facts-value input { width: 66px; text-align: right; font-size: 17px; font-variant-numeric: tabular-nums; }
+.scan-facts-unit { min-width: 20px; color: var(--muted); font-size: 15px; }
+.scan-facts-marker { display: inline-flex; width: 12px; color: var(--accent); }
+.scan-facts-marker i { width: 4px; height: 4px; margin: auto; border-radius: 50%; background: var(--carbs); }
+.scan-facts-row.edited .scan-facts-marker { color: var(--muted); }
+.scan-facts-row.reading input { color: var(--carbs); }
+.scan-facts-note { margin: 18px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.nutrition-label-live-layout > .food-picker-error { flex-shrink: 0; padding: 8px 16px; margin: 0; color: var(--fat); font-size: 12px; }
+@media (max-width: 600px) {
+  .food-picker-sheet.nutrition-label-sheet { height: min(94dvh, var(--pwa-visible-bottom, 100dvh)); max-height: min(94dvh, var(--pwa-visible-bottom, 100dvh)); padding-bottom: 0; }
+  .nutrition-label-sheet > .food-picker-head { padding: 0 16px 10px; }
+  .nutrition-label-sheet .nutrition-label-live-layout { padding: 0; margin: 0; }
+  .nutrition-label-live-layout .nutrition-label-scan-head { display: none; }
+  .scan-camera-stage { flex-basis: clamp(210px, 34dvh, 320px); }
+  .scan-facts { padding-inline: 20px; }
+}
+@media (max-height: 550px) {
+  .scan-camera-stage { flex-basis: 150px; }
+  .scan-camera-empty > svg, .scan-camera-empty > small { display: none; }
+  .scan-camera-empty { padding-bottom: 60px; font-size: 12px; }
+  .scan-facts:focus-within { flex-basis: 65%; }
+  .nutrition-label-capture:has(.scan-facts:focus-within) .scan-camera-stage { flex-basis: 95px; }
+}

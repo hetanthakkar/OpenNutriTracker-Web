@@ -1,246 +1,141 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
-import {
-  Activity, BedDouble, Check, Copy, ExternalLink, Footprints, HeartPulse,
-  Link2, MoonStar, Route, Scale, Timer, TrendingUp, Watch, X,
-} from "lucide-react";
-import { LineChart } from "./charts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Copy, ExternalLink, HeartPulse, Link2, ShieldCheck, Watch, X } from "lucide-react";
 import { Card } from "./ui";
-import {
-  conduitCategories,
-  conduitHealthSummary,
-  conduitHealthTrends,
-  type HealthTrendPeriod,
-} from "@/lib/apple-health";
+import { conduitCategories } from "@/lib/apple-health";
 
-const STORAGE_KEY = "ont:conduit-health-preview";
+type HealthStatus = {
+  configured: boolean;
+  connected: boolean;
+  latest: {
+    receivedAt: string;
+    processedAt: string | null;
+    status: "received" | "processed" | "failed";
+    summary: { measurements: number; weights: number; workouts: number };
+    error: string | null;
+  } | null;
+};
+
 const HEALTH_EVENT = "ont:health-connection-changed";
 
-export function AppleHealthSection({ period }: { period: HealthTrendPeriod }) {
-  const [connected, setConnected] = useState(false);
+export function AppleHealthSection() {
+  const [status, setStatus] = useState<HealthStatus | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    setConnected(window.localStorage.getItem(STORAGE_KEY) === "connected");
+  const [ingestToken, setIngestToken] = useState("");
+  const [copied, setCopied] = useState<"webhook" | "token" | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const refreshStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/health/conduit", { cache: "no-store" });
+      const data = await response.json() as HealthStatus & { message?: string };
+      if (!response.ok) throw new Error(data.message ?? "Could not load Apple Health status.");
+      setStatus(data);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load Apple Health status.");
+    }
   }, []);
 
-  const webhookPreview = useMemo(() => {
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => { void refreshStatus(); });
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refreshStatus();
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshStatus]);
+
+  useEffect(() => {
+    if (!status?.configured || status.connected) return;
+    const interval = window.setInterval(() => { void refreshStatus(); }, 10_000);
+    return () => window.clearInterval(interval);
+  }, [refreshStatus, status?.configured, status?.connected]);
+
+  const webhookUrl = useMemo(() => {
     if (typeof window === "undefined") return "/api/health/conduit";
     return `${window.location.origin}/api/health/conduit`;
   }, []);
 
-  const connectPreview = () => {
-    window.localStorage.setItem(STORAGE_KEY, "connected");
-    setConnected(true);
-    setSetupOpen(false);
-    window.dispatchEvent(new Event(HEALTH_EVENT));
-  };
-
-  const disconnect = () => {
-    window.localStorage.removeItem(STORAGE_KEY);
-    setConnected(false);
-    window.dispatchEvent(new Event(HEALTH_EVENT));
-  };
-
-  const copyWebhook = async () => {
+  const copy = async (value: string, kind: "webhook" | "token") => {
     try {
-      await navigator.clipboard.writeText(webhookPreview);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setCopied(false);
-    }
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      window.setTimeout(() => setCopied(null), 1600);
+    } catch { setCopied(null); }
   };
 
-  if (!connected) {
+  const createToken = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/me/health-ingest", { method: "POST" });
+      const data = await response.json() as { token?: string; message?: string };
+      if (!response.ok || !data.token) throw new Error(data.message ?? "Could not create an ingest token.");
+      setIngestToken(data.token);
+      setStatus((current) => ({ configured: true, connected: current?.connected ?? false, latest: current?.latest ?? null }));
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not create an ingest token.");
+    } finally { setBusy(false); }
+  };
+
+  const disconnect = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/me/health-ingest", { method: "DELETE" });
+      if (!response.ok) throw new Error("Could not disconnect Apple Health.");
+      setIngestToken("");
+      setStatus({ configured: false, connected: false, latest: null });
+      window.dispatchEvent(new Event(HEALTH_EVENT));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not disconnect Apple Health.");
+    } finally { setBusy(false); }
+  };
+
+  const latestAt = status?.latest?.receivedAt
+    ? new Date(status.latest.receivedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : null;
+  const importedCount = status?.latest
+    ? status.latest.summary.measurements + status.latest.summary.weights + status.latest.summary.workouts
+    : 0;
+
+  if (status?.connected) {
     return (
       <section className="apple-health-section">
-        <Card className="health-connect-card">
-          <div className="health-connect-copy">
-            <span className="health-logo"><HeartPulse size={22} /></span>
-            <div>
-              <div className="health-title-row">
-                <strong>Apple Health</strong>
-                <span>Optional</span>
-              </div>
-              <p>Bring activity, sleep, heart, workout and body data into your trends with Conduit Health Sync.</p>
-              <small>Skip this and the rest of OpenNutriTracker works exactly the same.</small>
-            </div>
+        <div className="health-section-head">
+          <div><span className="eyebrow">Apple Health</span><h2>Health & activity</h2><p>Conduit is sending health data to this profile.</p></div>
+          <div className="health-source-actions"><span className="health-live"><i /> Receiving data</span><button disabled={busy} onClick={() => void disconnect()}>Disconnect</button></div>
+        </div>
+        <Card className="health-details-card health-sync-status-card">
+          <div className="health-details-head">
+            <div><span>Connection active</span><strong>Latest Conduit delivery</strong></div>
+            <span className="health-live"><i /> {latestAt ?? "Received"}</span>
           </div>
-          <button className="secondary-button health-connect-button" onClick={() => setSetupOpen(true)}>
-            <Link2 size={17} /> Connect
-          </button>
+          <div className="health-sync-status-message">
+            {status.latest?.status === "failed" ? <p role="alert">The latest delivery was saved but could not be imported: {status.latest.error ?? "Unknown error"}</p> : <p>{importedCount > 0 ? `${importedCount} health record${importedCount === 1 ? "" : "s"} imported: ${status.latest?.summary.weights ?? 0} weight, ${status.latest?.summary.workouts ?? 0} workout, and ${status.latest?.summary.measurements ?? 0} other measurement${(status.latest?.summary.measurements ?? 0) === 1 ? "" : "s"}.` : "The connection was confirmed. New Apple Health readings will appear here after Conduit sends them."}</p>}
+            <button className="secondary-button" disabled={busy} onClick={() => void refreshStatus()}>Refresh</button>
+          </div>
         </Card>
-
-        {setupOpen && (
-          <div className="modal-backdrop" role="presentation" onMouseDown={() => setSetupOpen(false)}>
-            <section className="health-setup-dialog" role="dialog" aria-modal="true" aria-labelledby="health-setup-title" onMouseDown={(event) => event.stopPropagation()}>
-              <div className="sheet-handle" />
-              <div className="health-setup-head">
-                <div>
-                  <span className="eyebrow">Optional integration</span>
-                  <h2 id="health-setup-title">Connect Apple Health with Conduit</h2>
-                  <p>Conduit reads only the Apple Health categories you allow and forwards them to your webhook.</p>
-                </div>
-                <button className="icon-button" aria-label="Close" onClick={() => setSetupOpen(false)}><X size={20} /></button>
-              </div>
-
-              <div className="health-setup-steps">
-                <div className="health-step">
-                  <span>1</span>
-                  <div>
-                    <strong>Install Conduit Health Sync</strong>
-                    <p>The App Store listing is free and requires iOS 17 or later.</p>
-                    <a href="https://apps.apple.com/us/app/conduit-health-sync/id6786544769" target="_blank" rel="noreferrer">
-                      Open App Store <ExternalLink size={15} />
-                    </a>
-                  </div>
-                </div>
-                <div className="health-step">
-                  <span>2</span>
-                  <div>
-                    <strong>Choose what you want to share</strong>
-                    <p>Enable only the Health categories you want OpenNutriTracker to receive.</p>
-                    <div className="health-category-chips">{conduitCategories.map((category) => <span key={category}>{category}</span>)}</div>
-                  </div>
-                </div>
-                <div className="health-step">
-                  <span>3</span>
-                  <div>
-                    <strong>Add your webhook</strong>
-                    <p>This is the endpoint the production backend should expose for Conduit.</p>
-                    <div className="health-webhook">
-                      <code>{webhookPreview}</code>
-                      <button onClick={copyWebhook} aria-label="Copy webhook URL">{copied ? <Check size={16} /> : <Copy size={16} />}</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="health-preview-note">
-                <Watch size={18} />
-                <p><strong>Frontend preview:</strong> the repository does not have the webhook backend yet, so this button loads representative Conduit-shaped demo data.</p>
-              </div>
-
-              <div className="health-setup-actions">
-                <button className="dialog-cancel" onClick={() => setSetupOpen(false)}>Not now</button>
-                <button className="primary-button" onClick={connectPreview}>Preview connected view</button>
-              </div>
-            </section>
-          </div>
-        )}
+        {error && <p className="food-picker-error" role="alert">{error}</p>}
       </section>
     );
   }
 
-  const trend = conduitHealthTrends[period];
-
   return (
     <section className="apple-health-section">
-      <div className="health-section-head">
-        <div>
-          <span className="eyebrow">Apple Health</span>
-          <h2>Health & activity</h2>
-          <p>Synced through Conduit · {conduitHealthSummary.syncedAt}</p>
-        </div>
-        <div className="health-source-actions">
-          <span className="health-live"><i /> Connected</span>
-          <button onClick={disconnect}>Disconnect</button>
-        </div>
-      </div>
-
-      <div className="health-kpis">
-        <HealthKpi icon={Footprints} label="Steps" value={conduitHealthSummary.steps.toLocaleString()} detail="today" />
-        <HealthKpi icon={Activity} label="Active energy" value={`${conduitHealthSummary.activeEnergyKcal}`} unit="kcal" detail={`${conduitHealthSummary.exerciseMinutes} exercise min`} />
-        <HealthKpi icon={BedDouble} label="Sleep" value={conduitHealthSummary.sleepLabel} detail="last night" />
-        <HealthKpi icon={HeartPulse} label="Resting heart rate" value={`${conduitHealthSummary.restingHeartRateBpm}`} unit="bpm" detail={`HRV ${conduitHealthSummary.hrvMs} ms`} />
-      </div>
-
-      <div className="health-chart-grid">
-        <Card className="chart-card health-chart-card">
-          <div className="chart-title">
-            <div><span>Steps</span><strong>{trend.steps.at(-1)?.toLocaleString()} <small>latest</small></strong></div>
-            <span className="chart-pill"><Footprints size={15} /> {period}</span>
-          </div>
-          <LineChart values={[...trend.steps]} labels={[...trend.labels]} />
-        </Card>
-        <Card className="chart-card health-chart-card">
-          <div className="chart-title">
-            <div><span>Sleep</span><strong>{trend.sleep.at(-1)} <small>hours</small></strong></div>
-            <span className="chart-pill"><MoonStar size={15} /> {period}</span>
-          </div>
-          <LineChart values={[...trend.sleep]} color="var(--blue)" labels={[...trend.labels]} />
-        </Card>
-        <Card className="chart-card health-chart-card">
-          <div className="chart-title">
-            <div><span>Resting heart rate</span><strong>{trend.restingHeartRate.at(-1)} <small>bpm</small></strong></div>
-            <span className="chart-pill"><HeartPulse size={15} /> {period}</span>
-          </div>
-          <LineChart values={[...trend.restingHeartRate]} color="var(--protein)" labels={[...trend.labels]} />
-        </Card>
-      </div>
-
-      <Card className="health-details-card">
-        <div className="health-details-head">
-          <div><span>Latest synced measurements</span><strong>From Apple Health</strong></div>
-          <span className="health-live"><i /> {conduitHealthSummary.syncedAt}</span>
-        </div>
-        <div className="health-detail-grid">
-          <HealthDetail icon={Route} label="Distance" value={`${conduitHealthSummary.distanceKm} km`} />
-          <HealthDetail icon={Timer} label="Workouts" value={`${conduitHealthSummary.workouts} · ${conduitHealthSummary.workoutMinutes} min`} />
-          <HealthDetail icon={HeartPulse} label="Heart rate" value={`${conduitHealthSummary.heartRateBpm} bpm`} />
-          <HealthDetail icon={TrendingUp} label="VO₂ max" value={`${conduitHealthSummary.vo2Max} ml/kg/min`} />
-          <HealthDetail icon={Scale} label="Weight" value={`${conduitHealthSummary.weightKg} kg`} />
-          <HealthDetail icon={Scale} label="Body fat" value={`${conduitHealthSummary.bodyFatPercent}%`} />
-          <HealthDetail icon={Activity} label="Blood oxygen" value={`${conduitHealthSummary.oxygenSaturationPercent}%`} />
-          <HealthDetail icon={Activity} label="Respiratory rate" value={`${conduitHealthSummary.respiratoryRate}/min`} />
-          <HealthDetail icon={Activity} label="Dietary energy" value={`${conduitHealthSummary.nutrition.calories.toLocaleString()} kcal`} />
-          <HealthDetail icon={Activity} label="Protein" value={`${conduitHealthSummary.nutrition.proteinG} g`} />
-          <HealthDetail icon={Activity} label="Carbohydrates" value={`${conduitHealthSummary.nutrition.carbsG} g`} />
-          <HealthDetail icon={Activity} label="Fat" value={`${conduitHealthSummary.nutrition.fatG} g`} />
-          <HealthDetail icon={Footprints} label="Running speed" value={`${conduitHealthSummary.running.speedKph} km/h`} />
-          <HealthDetail icon={TrendingUp} label="Running power" value={`${conduitHealthSummary.running.powerW} W`} />
-          <HealthDetail icon={Footprints} label="Stride length" value={`${conduitHealthSummary.running.strideLengthM} m`} />
-          <HealthDetail icon={Footprints} label="Ground contact" value={`${conduitHealthSummary.running.groundContactMs} ms`} />
-        </div>
-        <div className="health-data-foot">
-          <span>Only categories enabled in Apple Health should be stored and shown.</span>
-          <span>Production UI can hide measurements that were not shared or are unavailable.</span>
-        </div>
+      <Card className="health-connect-card">
+        <div className="health-connect-copy"><span className="health-logo"><HeartPulse size={22} /></span><div><div className="health-title-row"><strong>Apple Health</strong><span>Optional</span></div><p>Bring activity, sleep, heart, workout and body data into your trends with Conduit Health Sync.</p><small>Skip this and the rest of MyFitnessTracker works exactly the same.</small></div></div>
+        <button className="secondary-button health-connect-button" onClick={() => setSetupOpen(true)}><Link2 size={17} /> {status?.configured ? "Finish setup" : "Connect"}</button>
       </Card>
+      {status?.configured && <div className="health-pending-status"><span><Watch size={16} /> Webhook ready — checking for the first Conduit delivery.</span><button className="text-button" disabled={busy} onClick={() => void refreshStatus()}>Check now</button></div>}
+      {error && <p className="food-picker-error" role="alert">{error}</p>}
+      {setupOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setSetupOpen(false)}><section className="health-setup-dialog" role="dialog" aria-modal="true" aria-labelledby="health-setup-title" onMouseDown={(event) => event.stopPropagation()}><div className="sheet-handle" /><div className="health-setup-head"><div><span className="eyebrow">Optional integration</span><h2 id="health-setup-title">Connect Apple Health with Conduit</h2><p>Conduit reads only the Apple Health categories you allow and forwards them to your secure webhook.</p></div><button className="icon-button" aria-label="Close" onClick={() => setSetupOpen(false)}><X size={20} /></button></div><div className="health-setup-steps"><div className="health-step"><span>1</span><div><strong>Install Conduit Health Sync</strong><p>The App Store listing is free and requires iOS 17 or later.</p><a href="https://apps.apple.com/us/app/conduit-health-sync/id6786544769" target="_blank" rel="noreferrer">Open App Store <ExternalLink size={15} /></a></div></div><div className="health-step"><span>2</span><div><strong>Choose what you want to share</strong><p>Enable only the Health categories you want MyFitnessTracker to receive.</p><div className="health-category-chips">{conduitCategories.map((category) => <span key={category}>{category}</span>)}</div></div></div><div className="health-step"><span>3</span><div><strong>Add your webhook and bearer token</strong><p>Generate a token, then use this URL and token in Conduit. The token is shown only once.</p><div className="health-webhook"><code>{webhookUrl}</code><button onClick={() => void copy(webhookUrl, "webhook")} aria-label="Copy webhook URL">{copied === "webhook" ? <Check size={16} /> : <Copy size={16} />}</button></div>{ingestToken && <div className="health-webhook health-token"><code>{ingestToken}</code><button onClick={() => void copy(ingestToken, "token")} aria-label="Copy bearer token">{copied === "token" ? <Check size={16} /> : <Copy size={16} />}</button></div>}</div></div></div><div className="health-preview-note"><ShieldCheck size={18} /><p><strong>Secure connection:</strong> your token is stored as a hash and can be revoked here at any time. Health readings will appear only after Conduit delivers data.</p></div><div className="health-setup-actions"><button className="dialog-cancel" onClick={() => setSetupOpen(false)}>Not now</button><button className="primary-button" disabled={busy} onClick={() => void createToken()}>{ingestToken ? "Generate replacement token" : "Generate secure token"}</button></div></section></div>}
     </section>
-  );
-}
-
-function HealthKpi({
-  icon: Icon,
-  label,
-  value,
-  unit,
-  detail,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  unit?: string;
-  detail: string;
-}) {
-  return (
-    <Card className="health-kpi">
-      <span className="round-icon green"><Icon size={19} /></span>
-      <div><span>{label}</span><strong>{value}{unit && <small> {unit}</small>}</strong><em>{detail}</em></div>
-    </Card>
-  );
-}
-
-function HealthDetail({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
-  return (
-    <div className="health-detail">
-      <span className="round-icon green"><Icon size={18} /></span>
-      <div><span>{label}</span><strong>{value}</strong></div>
-    </div>
   );
 }

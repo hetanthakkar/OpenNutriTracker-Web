@@ -1,4 +1,4 @@
-import { energyDensityForWeightChangeKcalPerKg } from "./expenditure";
+import { energyDensityForWeightChangeKcalPerKg } from "./expenditure.ts";
 
 export type CaloriePlan = {
   expenditureKcal: number;

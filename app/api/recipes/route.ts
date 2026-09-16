@@ -1,0 +1,20 @@
+import { NextRequest, NextResponse } from "next/server";
+import { DatabaseNotConfiguredError, databaseQuery } from "@/lib/db";
+import { attachCurrentUserCookie, getOrCreateCurrentUser } from "@/lib/current-user";
+export const dynamic = "force-dynamic"; export const runtime = "nodejs";
+type Row = { id:string; recipe_name:string; description:string|null; servings:string; ingredients:unknown[]; nutrients:Record<string,unknown>; energy_kcal:string; protein_g:string; carbohydrate_g:string; total_fat_g:string };
+const cols="id, recipe_name, description, servings::text, ingredients, nutrients, energy_kcal::text, protein_g::text, carbohydrate_g::text, total_fat_g::text";
+function out(row:Row){return {id:row.id,name:row.recipe_name,description:row.description,servings:Number(row.servings),ingredients:row.ingredients,nutrients:row.nutrients,macros:{energyKcal:Number(row.energy_kcal),proteinG:Number(row.protein_g),carbohydrateG:Number(row.carbohydrate_g),totalFatG:Number(row.total_fat_g)}};}
+function input(value:unknown){if(!value||typeof value!=="object")return null;const x=value as Record<string,unknown>;const n=(k:string)=>typeof x[k]==="number"?x[k]:Number(x[k]);const name=typeof x.name==="string"?x.name.trim():"";const description=typeof x.description==="string"&&x.description.trim()?x.description.trim():null;const servings=n("servings"),energyKcal=n("energyKcal"),proteinG=n("proteinG"),carbohydrateG=n("carbohydrateG"),totalFatG=n("totalFatG");if(!name||name.length>160||(description?.length??0)>2000||!Array.isArray(x.ingredients)||x.ingredients.length>100||[servings,energyKcal,proteinG,carbohydrateG,totalFatG].some(v=>!Number.isFinite(v)||v<0)||servings<=0||servings>1000)return null;return {name,description,servings,ingredients:x.ingredients,energyKcal,proteinG,carbohydrateG,totalFatG,nutrients:typeof x.nutrients==="object"&&x.nutrients&&!Array.isArray(x.nutrients)?x.nutrients:{energy_kcal:energyKcal,protein_g:proteinG,carbohydrate_g:carbohydrateG,total_fat_g:totalFatG}};}
+export async function GET(request:NextRequest){
+  const query=request.nextUrl.searchParams.get("query")?.trim().toLocaleLowerCase("en-US")??"";
+  if(query.length>80)return NextResponse.json({message:"query is too long."},{status:400});
+  try{
+    const user=await getOrCreateCurrentUser(request);
+    const tokens=query.match(/[\p{L}\p{N}]+/gu)?.slice(0,8)??[];
+    const clauses=tokens.map((_,index)=>`(lower(recipe_name) LIKE '%' || $${index+2} || '%' OR lower(coalesce(description,'')) LIKE '%' || $${index+2} || '%')`);
+    const r=await databaseQuery<Row>(`SELECT ${cols} FROM food_catalog.app.recipes WHERE profile_id=$1 ${clauses.length?`AND ${clauses.join(" AND ")}`:""} ORDER BY recipe_name LIMIT 50`,[user.profileId,...tokens]);
+    return attachCurrentUserCookie(NextResponse.json({recipes:r.rows.map(out)}),user);
+  }catch(error){return NextResponse.json({message:error instanceof DatabaseNotConfiguredError?"Set DATABASE_URL on the server.":"Recipe storage is temporarily unavailable."},{status:503});}
+}
+export async function POST(request:NextRequest){let body:unknown;try{body=await request.json();}catch{return NextResponse.json({message:"Request body must be valid JSON."},{status:400});}const x=input(body);if(!x)return NextResponse.json({message:"Invalid recipe."},{status:400});try{const user=await getOrCreateCurrentUser(request);const r=await databaseQuery<Row>(`INSERT INTO food_catalog.app.recipes (user_id,profile_id,recipe_name,description,servings,ingredients,nutrients,energy_kcal,protein_g,carbohydrate_g,total_fat_g) VALUES ($1,$2,$3,$4,$5,$6::JSONB,$7::JSONB,$8,$9,$10,$11) RETURNING ${cols}`,[user.id,user.profileId,x.name,x.description,x.servings,JSON.stringify(x.ingredients),JSON.stringify(x.nutrients),x.energyKcal,x.proteinG,x.carbohydrateG,x.totalFatG]);return attachCurrentUserCookie(NextResponse.json(out(r.rows[0]),{status:201}),user);}catch(error){return NextResponse.json({message:error instanceof DatabaseNotConfiguredError?"Set DATABASE_URL on the server.":"Recipe storage is temporarily unavailable."},{status:503});}}

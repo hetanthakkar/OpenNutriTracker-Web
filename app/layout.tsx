@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRuntime } from "@/components/pwa-runtime";
+import { appearanceBootstrap } from "@/lib/appearance-preferences";
 import "./globals.css";
 import "./settings-layout-fix.css";
 import "./interaction-fixes.css";
@@ -7,18 +8,15 @@ import "./pwa.css";
 import "./apple-health.css";
 import "./expenditure.css";
 import "./adaptive-budget.css";
+import "./nutrition-scanner.css";
 
 export const metadata: Metadata = {
-  title: "OpenNutriTracker",
+  title: "MyFitnessTracker",
   description: "Track meals, nutrition, hydration, activity and progress.",
   manifest: "/manifest.webmanifest",
-  icons: {
-    icon: "/logo.svg",
-    apple: "/logo.svg",
-  },
   appleWebApp: {
     capable: true,
-    title: "OpenNutriTracker",
+    title: "MyFitnessTracker",
     statusBarStyle: "black-translucent",
   },
 };
@@ -72,6 +70,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script id="appearance-bootstrap" dangerouslySetInnerHTML={{ __html: appearanceBootstrap }} />
         <script dangerouslySetInnerHTML={{ __html: pwaBootstrap }} />
       </head>
       <body>

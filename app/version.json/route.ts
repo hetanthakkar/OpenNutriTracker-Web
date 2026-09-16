@@ -1,4 +1,4 @@
-const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID?.trim() || "dev";
 
 export const dynamic = "force-dynamic";
 

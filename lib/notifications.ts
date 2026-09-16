@@ -1,5 +1,5 @@
 const VAPID_KEY = process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_KEY;
-const SUBSCRIPTION_ENDPOINT = process.env.NEXT_PUBLIC_PUSH_SUBSCRIPTION_ENDPOINT;
+const SUBSCRIPTION_ENDPOINT = process.env.NEXT_PUBLIC_PUSH_SUBSCRIPTION_ENDPOINT ?? "/api/push/subscriptions";
 const LOCAL_KEY = "ont_push_subscription";
 
 export type PushPermission = "granted" | "prompt" | "blocked" | "install" | "unsupported" | "unconfigured";
@@ -62,8 +62,6 @@ async function sendSubscription(subscription: PushSubscription, method: "POST" |
   };
 
   localStorage.setItem(LOCAL_KEY, JSON.stringify(payload.subscription));
-  if (!SUBSCRIPTION_ENDPOINT) return;
-
   const response = await fetch(SUBSCRIPTION_ENDPOINT, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -119,7 +117,7 @@ export async function enableNotifications(): Promise<string> {
   const state = pushPermission();
   if (state === "unconfigured") return "Push notifications are not configured yet.";
   if (state === "unsupported") return "This device does not support web push.";
-  if (state === "install") return "On iPhone, add OpenNutriTracker to the Home Screen first, then enable notifications.";
+  if (state === "install") return "On iPhone, add MyFitnessTracker to the Home Screen first, then enable notifications.";
   if (state === "blocked") return "Notifications are blocked in browser settings.";
 
   try {
@@ -127,9 +125,7 @@ export async function enableNotifications(): Promise<string> {
     if (permission !== "granted") return "Notifications were not allowed.";
 
     await ensureSubscription();
-    return SUBSCRIPTION_ENDPOINT
-      ? "Notifications enabled."
-      : "Notifications enabled on this device; configure the push subscription endpoint to send server pushes.";
+    return "Notifications enabled.";
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error("Enabling notifications failed:", error);
@@ -145,7 +141,7 @@ export async function disableNotifications(): Promise<string> {
     const subscription = await registration?.pushManager.getSubscription();
 
     if (subscription) {
-      if (SUBSCRIPTION_ENDPOINT) await sendSubscription(subscription, "DELETE").catch(() => {});
+      await sendSubscription(subscription, "DELETE").catch(() => {});
       await subscription.unsubscribe();
     }
 

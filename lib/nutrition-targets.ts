@@ -1,78 +1,139 @@
-export type TargetRow = { name: string; amount: string; target: string; unit: string; percent: number; level?: number };
+export type NutrientTotals = Record<string, number>;
+
+export type TargetRow = {
+  key: string;
+  name: string;
+  amount: number;
+  target: number | null;
+  unit: string;
+  percent: number;
+  level?: number;
+};
+
 export type TargetGroup = { name: string; rows: TargetRow[] };
 
-export const targetGroups: TargetGroup[] = [
+type NutrientDefinition = Omit<TargetRow, "amount" | "percent">;
+
+// These are every nutrition key presently imported in typesense_foods.nutrients.
+// Keys without a daily goal are still shown, but intentionally have no progress bar target.
+const definitions: Array<{ name: string; rows: NutrientDefinition[] }> = [
   { name: "General", rows: [
-    { name: "Energy", amount: "2,655", target: "2,855", unit: "kcal", percent: 93 },
-    { name: "Alcohol", amount: "0", target: "30", unit: "g", percent: 0 },
-    { name: "Caffeine", amount: "94", target: "400", unit: "mg", percent: 24 },
-    { name: "Oxalate", amount: "86", target: "250", unit: "mg", percent: 34 },
-    { name: "Phytate", amount: "412", target: "—", unit: "mg", percent: 0 },
-    { name: "Water", amount: "1,200", target: "1,900", unit: "ml", percent: 63 },
-  ]},
+    { key: "energy_kcal", name: "Energy", target: null, unit: "cal" },
+    { key: "alcohol_g", name: "Alcohol", target: 30, unit: "g" },
+    { key: "caffeine_mg", name: "Caffeine", target: 400, unit: "mg" },
+    { key: "water_g", name: "Food water", target: null, unit: "g" },
+  ] },
   { name: "Carbohydrates", rows: [
-    { name: "Carbs", amount: "374", target: "428", unit: "g", percent: 87 },
-    { name: "Net Carbs", amount: "354", target: "398", unit: "g", percent: 89, level: 1 },
-    { name: "Fiber", amount: "20", target: "30", unit: "g", percent: 68, level: 1 },
-    { name: "Insoluble Fiber", amount: "12", target: "20", unit: "g", percent: 60, level: 2 },
-    { name: "Soluble Fiber", amount: "8", target: "10", unit: "g", percent: 80, level: 2 },
-    { name: "Starch", amount: "126", target: "—", unit: "g", percent: 0, level: 1 },
-    { name: "Sugars", amount: "74", target: "90", unit: "g", percent: 82, level: 1 },
-    { name: "Added Sugars", amount: "18", target: "36", unit: "g", percent: 50, level: 1 },
-  ]},
+    { key: "carbohydrate_g", name: "Carbohydrates", target: 428, unit: "g" },
+    { key: "net_carbs_g", name: "Net carbs", target: 398, unit: "g", level: 1 },
+    { key: "dietary_fiber_g", name: "Dietary fiber", target: 30, unit: "g", level: 1 },
+    { key: "soluble_fiber_g", name: "Soluble fiber", target: 10, unit: "g", level: 2 },
+    { key: "total_sugars_g", name: "Total sugars", target: 90, unit: "g", level: 1 },
+    { key: "source_added_sugars_g", name: "Added sugars", target: 36, unit: "g", level: 2 },
+    { key: "starch_g", name: "Starch", target: null, unit: "g", level: 1 },
+    { key: "fructose_g", name: "Fructose", target: null, unit: "g", level: 2 },
+    { key: "glucose_g", name: "Glucose", target: null, unit: "g", level: 2 },
+    { key: "lactose_g", name: "Lactose", target: null, unit: "g", level: 2 },
+    { key: "maltose_g", name: "Maltose", target: null, unit: "g", level: 2 },
+    { key: "sucrose_g", name: "Sucrose", target: null, unit: "g", level: 2 },
+    { key: "sorbitol_g", name: "Sorbitol", target: null, unit: "g", level: 2 },
+  ] },
   { name: "Lipids", rows: [
-    { name: "Fat", amount: "89", target: "77", unit: "g", percent: 116 },
-    { name: "Monounsaturated", amount: "31", target: "—", unit: "g", percent: 0, level: 1 },
-    { name: "Polyunsaturated", amount: "12", target: "—", unit: "g", percent: 0, level: 1 },
-    { name: "Omega-3", amount: "2.3", target: "1.6", unit: "g", percent: 144, level: 2 },
-    { name: "ALA", amount: "1.4", target: "1.6", unit: "g", percent: 88, level: 3 },
-    { name: "DHA", amount: "0.5", target: "0.25", unit: "g", percent: 200, level: 3 },
-    { name: "EPA", amount: "0.4", target: "0.25", unit: "g", percent: 160, level: 3 },
-    { name: "Omega-6", amount: "9.1", target: "17", unit: "g", percent: 54, level: 2 },
-    { name: "AA", amount: "0.2", target: "—", unit: "g", percent: 0, level: 3 },
-    { name: "LA", amount: "8.4", target: "17", unit: "g", percent: 49, level: 3 },
-    { name: "Saturated", amount: "17.5", target: "24", unit: "g", percent: 73, level: 1 },
-    { name: "Trans-Fats", amount: "0.3", target: "2", unit: "g", percent: 15, level: 1 },
-    { name: "Cholesterol", amount: "218", target: "300", unit: "mg", percent: 73 },
-  ]},
+    { key: "total_fat_g", name: "Total fat", target: 77, unit: "g" },
+    { key: "monounsaturated_fat_g", name: "Monounsaturated fat", target: null, unit: "g", level: 1 },
+    { key: "polyunsaturated_fat_g", name: "Polyunsaturated fat", target: null, unit: "g", level: 1 },
+    { key: "total_omega_3_g", name: "Omega-3", target: 1.6, unit: "g", level: 1 },
+    { key: "alpha_linolenic_acid_omega_3_g", name: "ALA", target: 1.6, unit: "g", level: 2 },
+    { key: "dha_g", name: "DHA", target: 0.25, unit: "g", level: 2 },
+    { key: "epa_g", name: "EPA", target: 0.25, unit: "g", level: 2 },
+    { key: "total_omega_6_g", name: "Omega-6", target: 17, unit: "g", level: 1 },
+    { key: "linoleic_acid_omega_6_g", name: "LA", target: 17, unit: "g", level: 2 },
+    { key: "saturated_fat_g", name: "Saturated fat", target: 24, unit: "g", level: 1 },
+    { key: "trans_fat_g", name: "Trans fat", target: 2, unit: "g", level: 1 },
+    { key: "cholesterol_mg", name: "Cholesterol", target: 300, unit: "mg" },
+  ] },
   { name: "Protein", rows: [
-    { name: "Protein", amount: "92", target: "107", unit: "g", percent: 86 },
-    { name: "Cystine", amount: "1.1", target: "—", unit: "g", percent: 0, level: 1 },
-    { name: "Histidine", amount: "2.4", target: "1.2", unit: "g", percent: 200, level: 1 },
-    { name: "Isoleucine", amount: "4.2", target: "1.7", unit: "g", percent: 200, level: 1 },
-    { name: "Leucine", amount: "7.1", target: "3.3", unit: "g", percent: 200, level: 1 },
-    { name: "Lysine", amount: "6.8", target: "3", unit: "g", percent: 200, level: 1 },
-    { name: "Methionine", amount: "2.1", target: "1.3", unit: "g", percent: 162, level: 1 },
-    { name: "Phenylalanine", amount: "3.8", target: "2.5", unit: "g", percent: 152, level: 1 },
-    { name: "Threonine", amount: "3.6", target: "1.7", unit: "g", percent: 200, level: 1 },
-    { name: "Tryptophan", amount: "1.1", target: "0.4", unit: "g", percent: 200, level: 1 },
-    { name: "Tyrosine", amount: "3.1", target: "—", unit: "g", percent: 0, level: 1 },
-    { name: "Valine", amount: "4.8", target: "2.2", unit: "g", percent: 200, level: 1 },
-  ]},
-  { name: "Vitamins", rows: [
-    { name: "B1 (Thiamine)", amount: "0.9", target: "1.2", unit: "mg", percent: 75 },
-    { name: "B2 (Riboflavin)", amount: "1.4", target: "1.3", unit: "mg", percent: 108 },
-    { name: "B3 (Niacin)", amount: "14", target: "16", unit: "mg", percent: 88 },
-    { name: "B5 (Pantothenic Acid)", amount: "3.7", target: "5", unit: "mg", percent: 74 },
-    { name: "B6 (Pyridoxine)", amount: "1.5", target: "1.7", unit: "mg", percent: 88 },
-    { name: "B12 (Cobalamin)", amount: "2.1", target: "2.4", unit: "µg", percent: 88 },
-    { name: "Folate", amount: "256", target: "400", unit: "µg", percent: 64 },
-    { name: "Vitamin A", amount: "520", target: "900", unit: "µg", percent: 58 },
-    { name: "Vitamin C", amount: "83", target: "90", unit: "mg", percent: 92 },
-    { name: "Vitamin D", amount: "420", target: "600", unit: "IU", percent: 70 },
-    { name: "Vitamin E", amount: "9", target: "15", unit: "mg", percent: 60 },
-    { name: "Vitamin K", amount: "96", target: "120", unit: "µg", percent: 80 },
-  ]},
+    { key: "protein_g", name: "Protein", target: 107, unit: "g" },
+  ] },
+  { name: "Vitamins & related", rows: [
+    { key: "thiamin_b1_mg", name: "B1 (Thiamine)", target: 1.2, unit: "mg" },
+    { key: "riboflavin_b2_mg", name: "B2 (Riboflavin)", target: 1.3, unit: "mg" },
+    { key: "niacin_b3_mg", name: "B3 (Niacin)", target: 16, unit: "mg" },
+    { key: "pantothenic_acid_b5_mg", name: "B5 (Pantothenic acid)", target: 5, unit: "mg" },
+    { key: "vitamin_b6_mg", name: "B6", target: 1.7, unit: "mg" },
+    { key: "biotin_b7_ug", name: "B7 (Biotin)", target: 30, unit: "µg" },
+    { key: "vitamin_b12_ug", name: "B12", target: 2.4, unit: "µg" },
+    { key: "folate_total_ug", name: "Folate", target: 400, unit: "µg" },
+    { key: "vitamin_a_rae_ug", name: "Vitamin A", target: 900, unit: "µg" },
+    { key: "vitamin_a_iu", name: "Vitamin A", target: null, unit: "IU", level: 1 },
+    { key: "vitamin_a_daily_value_pct", name: "Vitamin A", target: null, unit: "% DV", level: 1 },
+    { key: "vitamin_c_mg", name: "Vitamin C", target: 90, unit: "mg" },
+    { key: "vitamin_c_daily_value_pct", name: "Vitamin C", target: null, unit: "% DV", level: 1 },
+    { key: "vitamin_d_d2_d3_ug", name: "Vitamin D", target: 15, unit: "µg" },
+    { key: "vitamin_d_iu", name: "Vitamin D", target: null, unit: "IU", level: 1 },
+    { key: "vitamin_d_daily_value_pct", name: "Vitamin D", target: null, unit: "% DV", level: 1 },
+    { key: "vitamin_e_mg", name: "Vitamin E", target: 15, unit: "mg" },
+    { key: "vitamin_k_ug", name: "Vitamin K", target: 120, unit: "µg" },
+    { key: "alpha_carotene_ug", name: "Alpha-carotene", target: null, unit: "µg" },
+    { key: "beta_carotene_ug", name: "Beta-carotene", target: null, unit: "µg" },
+    { key: "choline_mg", name: "Choline", target: 550, unit: "mg" },
+  ] },
   { name: "Minerals", rows: [
-    { name: "Calcium", amount: "760", target: "1,000", unit: "mg", percent: 76 },
-    { name: "Copper", amount: "0.8", target: "0.9", unit: "mg", percent: 89 },
-    { name: "Iron", amount: "7.6", target: "18", unit: "mg", percent: 42 },
-    { name: "Magnesium", amount: "312", target: "420", unit: "mg", percent: 74 },
-    { name: "Manganese", amount: "1.9", target: "2.3", unit: "mg", percent: 83 },
-    { name: "Phosphorus", amount: "840", target: "700", unit: "mg", percent: 120 },
-    { name: "Potassium", amount: "2,484", target: "3,500", unit: "mg", percent: 71 },
-    { name: "Selenium", amount: "62", target: "55", unit: "µg", percent: 113 },
-    { name: "Sodium", amount: "1,820", target: "2,300", unit: "mg", percent: 79 },
-    { name: "Zinc", amount: "8.4", target: "11", unit: "mg", percent: 76 },
-  ]},
+    { key: "calcium_mg", name: "Calcium", target: 1000, unit: "mg" },
+    { key: "calcium_daily_value_pct", name: "Calcium", target: null, unit: "% DV", level: 1 },
+    { key: "chromium_ug", name: "Chromium", target: 35, unit: "µg" },
+    { key: "copper_mg", name: "Copper", target: 0.9, unit: "mg" },
+    { key: "iodine_ug", name: "Iodine", target: 150, unit: "µg" },
+    { key: "iron_mg", name: "Iron", target: 18, unit: "mg" },
+    { key: "iron_daily_value_pct", name: "Iron", target: null, unit: "% DV", level: 1 },
+    { key: "magnesium_mg", name: "Magnesium", target: 420, unit: "mg" },
+    { key: "manganese_mg", name: "Manganese", target: 2.3, unit: "mg" },
+    { key: "molybdenum_ug", name: "Molybdenum", target: 45, unit: "µg" },
+    { key: "phosphorus_mg", name: "Phosphorus", target: 700, unit: "mg" },
+    { key: "potassium_mg", name: "Potassium", target: 3500, unit: "mg" },
+    { key: "selenium_ug", name: "Selenium", target: 55, unit: "µg" },
+    { key: "sodium_mg", name: "Sodium", target: 2300, unit: "mg" },
+    { key: "zinc_mg", name: "Zinc", target: 11, unit: "mg" },
+  ] },
 ];
+
+const maximumTargetKeys = new Set([
+  "alcohol_g", "caffeine_mg", "total_sugars_g", "source_added_sugars_g",
+  "saturated_fat_g", "trans_fat_g", "cholesterol_mg", "sodium_mg",
+]);
+
+export const nutrientDefinitions = definitions.flatMap((group, groupIndex) => group.rows.map((row, rowIndex) => ({
+  code: row.key,
+  displayName: row.name,
+  groupName: group.name,
+  canonicalUnit: row.unit,
+  hierarchyLevel: row.level ?? 0,
+  sortOrder: groupIndex * 100 + rowIndex,
+  targetKind: row.target === null ? "none" as const : maximumTargetKeys.has(row.key) ? "maximum" as const : "minimum" as const,
+  defaultTarget: row.target,
+})));
+
+export const nutritionGoalKeys = nutrientDefinitions.filter((row) => row.defaultTarget !== null).map((row) => row.code);
+
+function valueFor(key: string, totals: NutrientTotals) {
+  if (key === "net_carbs_g") return Math.max(0, (totals.carbohydrate_g ?? 0) - (totals.dietary_fiber_g ?? 0));
+  return totals[key] ?? 0;
+}
+
+export function buildTargetGroups(totals: NutrientTotals, overrides: Record<string, number> = {}): TargetGroup[] {
+  return definitions.map((group) => ({
+    name: group.name,
+    rows: group.rows.map((definition) => {
+      const amount = valueFor(definition.key, totals);
+      const target = overrides[definition.key] ?? definition.target;
+      return { ...definition, target, amount, percent: target === null ? 0 : Math.round((amount / target) * 100) };
+    }),
+  }));
+}
+
+export function formatNutrientAmount(value: number) {
+  if (!Number.isFinite(value)) return "0";
+  if (Math.abs(value) >= 100) return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (Math.abs(value) >= 10) return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}

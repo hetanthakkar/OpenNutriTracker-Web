@@ -76,7 +76,7 @@
 }
 
 .expenditure-primary > div > span,
-.expenditure-metric span,
+.expenditure-metric > div > span,
 .expenditure-chart-title span {
   display: block;
   color: var(--muted);

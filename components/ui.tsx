@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`card ${className}`}>{children}</section>;
+export function Card({ children, className = "", style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
+  return <section className={`card ${className}`} style={style}>{children}</section>;
 }
 
 export function SectionTitle({ title, action }: { title: string; action?: string }) {

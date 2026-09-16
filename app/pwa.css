@@ -4,7 +4,93 @@ html[data-pwa-standalone="true"] body {
 }
 
 @media (max-width: 760px) {
+  html[data-pwa-keyboard="true"] .mobile-nav {
+    display: none !important;
+  }
+
+  /* The home quick-stats container is inline-sized by HomeView. Give both
+     weight cards an explicit stretch behavior in standalone mode so Safari
+     cannot size one track from its content (for example, a wrapped weekly
+     goal) and leave the pair looking off-center. */
+  html[data-pwa-standalone="true"] .quick-stats {
+    align-items: stretch;
+    justify-items: stretch;
+  }
+
+  html[data-pwa-standalone="true"] .quick-stats > .weight-stat {
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+  }
+}
+
+/* Fixed elements are normally sized against the layout viewport. On mobile,
+   that viewport can continue behind the software keyboard; the runtime keeps
+   this value aligned with the visual viewport's lower edge. */
+.modal-backdrop {
+  inset: 0 0 auto;
+  height: var(--pwa-visible-bottom, 100dvh);
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/* A fixed backdrop should own the gesture while it is open. Without locking
+   the layout scroller, a vertical swipe can be handed to the page behind the
+   sheet instead of the sheet's own overflow container. */
+body:has(.modal-backdrop) {
+  overflow: hidden;
+}
+
+.modal-backdrop > section {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-backdrop .add-sheet,
+.modal-backdrop .settings-dialog,
+.modal-backdrop .food-picker-sheet,
+.modal-backdrop .diary-editor-sheet,
+.modal-backdrop .weight-entry-sheet,
+.modal-backdrop .profile-editor-sheet,
+.modal-backdrop .health-setup-dialog {
+  max-height: calc(var(--pwa-visible-bottom, 100dvh) - 36px);
+}
+
+.modal-backdrop .health-setup-dialog {
+  touch-action: pan-y;
+}
+
+.modal-backdrop .add-sheet,
+.modal-backdrop .settings-dialog,
+.modal-backdrop .food-picker-sheet,
+.modal-backdrop .diary-editor-sheet,
+.modal-backdrop .weight-entry-sheet,
+.modal-backdrop .profile-editor-sheet {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-backdrop .food-picker-sheet.nutrition-label-sheet {
+  overflow: hidden;
+}
+
+.modal-backdrop .add-sheet,
+.modal-backdrop .settings-dialog-body,
+.modal-backdrop .food-picker-sheet,
+.modal-backdrop .diary-editor-sheet,
+.modal-backdrop .weight-entry-sheet,
+.modal-backdrop .profile-editor-sheet,
+.modal-backdrop .health-setup-steps {
+  touch-action: pan-y;
+}
+
+@media (max-width: 760px) {
   html[data-pwa-standalone="true"] body {
+    overflow: hidden;
+  }
+
+  html[data-pwa-standalone="true"] .app-shell:has(.modal-backdrop) > main {
     overflow: hidden;
   }
 
@@ -14,6 +100,10 @@ html[data-pwa-standalone="true"] body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* Paired gives every screen a top inset before its first visible content.
+       Our standalone header is intentionally hidden, so the shell itself must
+       reserve that inset or the page begins underneath the iPhone notch. */
+    padding-top: env(safe-area-inset-top);
   }
 
   html[data-pwa-standalone="true"] .app-shell > main {
@@ -26,12 +116,48 @@ html[data-pwa-standalone="true"] body {
   }
 
   html[data-pwa-standalone="true"] .topbar {
-    top: 0;
-    padding-top: max(17px, env(safe-area-inset-top));
+    display: none;
   }
 
   html[data-pwa-standalone="true"] .page-content {
     padding-bottom: 24px;
+  }
+
+  html[data-pwa-standalone="true"] .diary-timeline-card .diary-meal {
+    column-gap: 14px;
+  }
+
+  html[data-pwa-standalone="true"] .tracking-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  html[data-pwa-standalone="true"] .tracking-card {
+    padding: 16px;
+  }
+
+  /* Authentication and cold-start states render outside .app-shell. Keep
+     those full-page screens inside both iOS safe areas as well. */
+  html[data-pwa-standalone="true"] .auth-loading-shell {
+    min-height: max(var(--app-height, 0px), 100dvh);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  html[data-pwa-standalone="true"] .auth-gate-shell {
+    min-height: max(var(--app-height, 0px), 100dvh);
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* Fixed dialogs do not inherit the shell padding. Reserve the notch inset
+     on their overlay so tall sheets and onboarding cannot slide beneath it. */
+  html[data-pwa-standalone="true"] .modal-backdrop {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  html[data-pwa-standalone="true"] .modal-backdrop > section {
+    max-height: calc(var(--pwa-visible-bottom, 100dvh) - env(safe-area-inset-top));
   }
 
   /* In the installed app the tab bar is its own non-scrolling flex row, like
@@ -45,5 +171,41 @@ html[data-pwa-standalone="true"] body {
     height: auto;
     min-height: calc(72px + env(safe-area-inset-bottom));
     padding-bottom: max(5px, env(safe-area-inset-bottom));
+  }
+
+  /* Keep the add control within the installed app's tab bar. The floating
+     treatment is useful in the browser, but it looks detached in standalone
+     mode where the bar already sits at the bottom of the app shell. */
+  html[data-pwa-standalone="true"] .mobile-add {
+    align-self: center;
+    transform: none;
+    border-width: 0;
+    box-shadow: none;
+  }
+
+  /* Mobile sheets finish above the home indicator. The visual-viewport height
+     above also keeps them clear of the keyboard while an input is focused. */
+  html[data-pwa-standalone="true"] .add-sheet {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  html[data-pwa-standalone="true"] .settings-dialog {
+    padding-bottom: calc(17px + env(safe-area-inset-bottom));
+  }
+
+  html[data-pwa-standalone="true"] .food-picker-sheet {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  html[data-pwa-standalone="true"] .diary-editor-sheet {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  html[data-pwa-standalone="true"] .weight-entry-sheet {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  html[data-pwa-standalone="true"] .profile-editor-sheet {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 }

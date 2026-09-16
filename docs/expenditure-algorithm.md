@@ -53,7 +53,7 @@ References:
 - Hall KD. *What is the required energy deficit per unit weight loss?* Int J Obes. 2008;32(3):573-576. PMID 17848938. https://pubmed.ncbi.nlm.nih.gov/17848938/
 - Hall KD, Sacks G, Chandramohan D, et al. *Quantification of the effect of energy imbalance on bodyweight.* Lancet. 2011;378(9793):826-837. PMID 21872751. https://pubmed.ncbi.nlm.nih.gov/21872751/
 
-If body-fat data are unavailable, the current implementation falls back to 7,000 kcal/kg and lowers interpretability. Production should prefer a recent body-fat measurement when available but should not require one.
+If body-fat data are unavailable, the implementation falls back to 7,000 kcal/kg. The production profile loader currently does not supply body fat, so both expenditure and targets use this fallback. The optional Hall/Forbes calculation is not the full NIH dynamic model. Neither 7,000 nor 7,700 is a physiological constant; choosing between them requires validation beyond synthetic data.
 
 ## Engineering choices
 
@@ -61,25 +61,29 @@ These are product/modeling decisions, not claims that a paper established these 
 
 ### Weight smoothing
 
-Scale measurements contain short-term noise from fluid, glycogen, sodium, gut contents and measurement error. The implementation uses a robust constant-velocity Kalman filter with capped daily innovations. Raw one-day weight differences are never used directly for expenditure.
+Scale measurements contain short-term noise from fluid, glycogen, sodium, gut contents and measurement error. The implementation uses exponential smoothing with alpha 0.10 for daily measurements. The first real measurement seeds the trend, regardless of leading empty calendar days. On missing days the trend holds; the next measurement uses `1 - 0.9^min(gapDays, 3)` to account for short gaps without extrapolating weight velocity.
 
 The filter is causal: today's estimate does not look at future measurements.
 
 ### Evidence window and timing
 
-A morning weight on day N is paired with completed calorie intake through day N-1. A 14-day expenditure window therefore uses up to 14 completed intake days bounded by the corresponding morning trend-weight change. Same-day incomplete intake is never paired with that morning's weight.
+A morning weight on day N is paired with completed calorie intake through day N-1. The expenditure window uses up to 20 completed intake days bounded by the corresponding morning trend-weight change. Today's food cannot change that morning's expenditure or confidence. Before 20 days, a shorter window can be used after the minimum evidence threshold is met.
 
 An observed expenditure update begins once there are at least:
 
-- 7 completed energy-balance intervals
-- 4 logged calorie days
-- 3 scale measurements across the bounded weight window
+- 14 calendar intervals since the first real weigh-in
+- 10 completed calorie days and at least 70% calorie coverage in the window
+- 6 scale measurements across the bounded weight window
+- a weigh-in no more than 3 days old
+- no more than 3 missing nutrition days in the preceding 7 completed days
 
-This makes the estimator degrade gracefully rather than requiring perfect daily logging.
+Normal expenditure smoothing uses alpha 0.10, or 0.20 while fewer than 21 completed food days exist. Steps can increase this by at most 35%. The existing daily change limits and 1,200-5,000 kcal bounds remain. These are engineering choices, not recovered MacroFactor coefficients.
 
 ### Missing intake
 
-A missing food-log day is **not zero calories**. The estimator imputes from recent observed intake and reduces confidence based on intake coverage.
+A missing food-log day is **not zero calories**. Only diary days explicitly marked complete are supplied as intake. Food edits reopen a day. Missing intake is imputed from the median of prior logged intake within 14 calendar days, falling back to the current estimate when none exists. Imputed days never count toward coverage or maturity.
+
+Updates pause when more than three of the previous seven nutrition days are missing, a weigh-in is over three days old, or the evidence thresholds are no longer met. The estimate holds while confidence decays by 20% per paused day. New adequate evidence resumes updates. `status` distinguishes `building`, `active`, and `paused`; a previously learned estimate remains `isAdaptive` while paused.
 
 This is intentionally conservative because self-reported energy intake is known to contain substantial measurement error. Missing-day imputation should later be calibrated against our own user data rather than presented as directly measured intake.
 
@@ -118,11 +122,24 @@ Because adaptive TDEE is relearned continuously, metabolic and activity changes 
 
 Confidence is derived from:
 
-- maturity of the user's history
+- number of actually completed food days, excluding today's intake
 - calorie-log coverage in the evidence window
 - weight-measurement coverage in the evidence window
+- age of the latest weigh-in, with a factor of `0.8^ageDays`
 
-It is capped below 100% because neither food logging nor free-living body-weight inference is a direct calorimetry measurement.
+The maturity factor is `(completedFoodDays - 9) / 21`, bounded to 0.2-1.0 once evidence is sufficient. The final score is capped at 0.98. Leading empty calendar days are discarded, internal calendar gaps are filled as missing, and duplicate dates count once. This is an engineering evidence score, not a calibrated probability of accuracy; the UI calls it evidence and explicitly labels paused estimates.
+
+## Shared calculation
+
+`lib/expenditure-data.ts` loads the same 120-day window of completed nutrition, daily weights, steps, and dated profile data for daily budgets and Trends. Historical calculations exclude future weights. Trends calculates its current target from this estimate rather than using an arbitrary latest saved target. Home receives the result through `resolveDailyPlan`, which preserves the existing snapshot persistence and manual adjustment behavior.
+
+## Regression checks
+
+Run `npm run test:expenditure` for estimator, shared data/budget, and weight-progress tests. Database calls are mocked in the shared-loader tests; no user records are changed.
+
+The 2026-09 comparison used constant 2,500 kcal/day expenditure and intake, with a temporary +2 kg scale change on days 50-54. The old Kalman/14-day estimator had a maximum error of 624 kcal/day; exponential smoothing with the 20-day window reduced it to 134 kcal/day using the same 7,000 kcal/kg conversion.
+
+This stability trades off responsiveness. For a sustained 400 kcal/day expenditure change in either direction, the new filter's error was about 172 kcal/day after 28 days and 19 after 56 days; the old filter was about 2 kcal/day off after 28 days. These fixtures verify behavior, not real-world accuracy. Tests also cover steady loss/gain, isolated outliers, missing nutrition, stale weights, resuming tracking, startup padding, and steps without calorie double-counting.
 
 ## Production data contract
 

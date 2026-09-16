@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" minBufferTime="PT2S" type="static" mediaPresentationDuration="PT5764S">
+  <Period id="0">
+    <AdaptationSet id="0" contentType="audio" lang="unknown" subsegmentAlignment="true">
+      <ContentProtection value="cbcs" schemeIdUri="urn:mpeg:dash:mp4protection:2011" cenc:default_KID="528f5f91-f061-c0a5-f0e8-2e4f01df0064"/>
+      <ContentProtection schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed">
+        <cenc:pssh>AAAAOHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAABgSEL8Dc28YPwczAc+MX3tGlJ9I88aJmwY=</cenc:pssh>
+      </ContentProtection>
+      <Representation id="0" bandwidth="128000" codecs="mp4a.40.2" mimeType="audio/mp4" audioSamplingRate="48000">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+        <BaseURL>https://cdn01.vdocipher.com/media/ZU2oJTtaj7oCK/41c9d83e/track.mp4</BaseURL>
+        <SegmentBase indexRange="986-12549" timescale="48000">
+          <Initialization range="0-985"/>
+        </SegmentBase>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1" contentType="video" width="1280" height="720" frameRate="15360/512" par="16:9" subsegmentAlignment="true">
+      <ContentProtection value="cbcs" schemeIdUri="urn:mpeg:dash:mp4protection:2011" cenc:default_KID="709793d5-d12b-2d1a-ad61-c111194d6717"/>
+      <ContentProtection schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed">
+        <cenc:pssh>AAAAOHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAABgSEL8Dc28YPwczAc+MX3tGlJ9I88aJmwY=</cenc:pssh>
+      </ContentProtection>
+      <Representation id="1" bandwidth="177000" codecs="avc1.4d4028" mimeType="video/mp4" sar="1:1">
+        <BaseURL>https://cdn01.vdocipher.com/media/ZU2oJTtaj7oCK/60c90e0a/track.mp4</BaseURL>
+        <SegmentBase indexRange="1047-9418" timescale="15360">
+          <Initialization range="0-1046"/>
+        </SegmentBase>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

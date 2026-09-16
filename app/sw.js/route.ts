@@ -1,6 +1,6 @@
-const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID?.trim() || "dev";
 const VAPID_KEY = process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_KEY ?? "";
-const SUBSCRIPTION_ENDPOINT = process.env.NEXT_PUBLIC_PUSH_SUBSCRIPTION_ENDPOINT ?? "";
+const SUBSCRIPTION_ENDPOINT = process.env.NEXT_PUBLIC_PUSH_SUBSCRIPTION_ENDPOINT ?? "/api/push/subscriptions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +24,13 @@ self.addEventListener("message", (event) => {
 // not cache the Next.js shell. Navigations always come from the network, so a
 // deploy cannot leave an old HTML shell pinned behind a stale cache.
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET" || event.request.mode !== "navigate") return;
-  event.respondWith(fetch(event.request));
+  if (event.request.method !== "GET") return;
+  if (event.request.mode === "navigate") {
+    // Do not let the browser's HTTP cache pin an old Next shell after a
+    // deployment. Static JS/CSS remain cacheable by the browser; only the
+    // navigation response is forced to the current server build.
+    event.respondWith(fetch(new Request(event.request, { cache: "no-store" })));
+  }
 });
 
 function base64UrlToUint8Array(value) {
@@ -48,15 +53,13 @@ self.addEventListener("push", (event) => {
   }
 
   const nested = data.data || {};
-  const title = data.title || nested.title || "OpenNutriTracker";
+  const title = data.title || nested.title || "MyFitnessTracker";
   const body = data.body || nested.body || "";
   const url = data.url || nested.url || "/";
 
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/logo.svg",
-      badge: "/logo.svg",
       data: { ...nested, ...data, url },
     })
   );
@@ -89,7 +92,6 @@ self.addEventListener("pushsubscriptionchange", (event) => {
       userVisibleOnly: true,
       applicationServerKey: base64UrlToUint8Array(VAPID_KEY),
     });
-    if (!SUBSCRIPTION_ENDPOINT) return;
     await fetch(SUBSCRIPTION_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

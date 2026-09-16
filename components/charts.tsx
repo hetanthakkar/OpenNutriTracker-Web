@@ -39,7 +39,7 @@ export function LineChart({ values, color = "var(--accent)", height = 180, fill 
 export function Donut({
   value = 93,
   centerValue = 200,
-  centerLabel = "kcal left",
+  centerLabel = "cal left",
 }: {
   value?: number;
   centerValue?: number | string;
